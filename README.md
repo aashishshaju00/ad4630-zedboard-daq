@@ -28,13 +28,13 @@ The system was designed as a **general-purpose research data acquisition platfor
 **Signal chain**
 ```
 Analog Differential Input → [Anti Alias Filter] → EVAL-AD4630-24FMCZ → ZedBoard (Zynq-7020)
-                                                                      │
-                                                           Gigabit Ethernet
-                                                          (galvanic isolation)
-                                                                      │
-                                                               Windows Laptop
-                                                             Python (capture)
-                                                             MATLAB (analysis)
+                                                                                │
+                                                                    Gigabit Ethernet
+                                                                    (galvanic isolation)
+                                                                                │
+                                                                        Windows Laptop
+                                                                      Python (capture)
+                                                                      MATLAB (analysis)
 ```
 
 ### Core hardware
