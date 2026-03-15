@@ -26,7 +26,7 @@ The system was designed as a **general-purpose research data acquisition platfor
 # System Architecture
 
 **Signal chain**
-
+```
 Analog Differential Input → [Anti Alias Filter] → EVAL-AD4630-24FMCZ → ZedBoard (Zynq-7020)
                                                                       │
                                                            Gigabit Ethernet
@@ -35,7 +35,7 @@ Analog Differential Input → [Anti Alias Filter] → EVAL-AD4630-24FMCZ → Zed
                                                                Windows Laptop
                                                              Python (capture)
                                                              MATLAB (analysis)
-
+```
 
 ### Core hardware
 
@@ -82,6 +82,7 @@ During validation, the analog front-end behavior was measured and modeled before
 ---
 
 # Repository Structure
+```
 ad4630-zedboard-daq/
 ├── README.md
 ├── docs/
@@ -104,7 +105,7 @@ ad4630-zedboard-daq/
 ├── figures/
 ├── hardware/
 └── references/
-
+```
 ---
 
 # Workflow Overview
