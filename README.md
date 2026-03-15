@@ -1,4 +1,4 @@
-# High-Speed Research-Grade Data Acquisition System
+# High-Speed Portable Data Acquisition System Build and Validation
 
 This repository documents the design, integration, calibration, and validation of a portable **24-bit high-speed data acquisition system** built around the Analog Devices AD4630 platform and a Zynq-based embedded controller.
 
