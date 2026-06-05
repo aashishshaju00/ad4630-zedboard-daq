@@ -1,0 +1,11 @@
+# Host-side Python dependencies for capture, calibration, and system ID.
+# The analysis half of the workflow runs in MATLAB and is not covered here.
+#
+#   python -m venv .venv
+#   source .venv/bin/activate      # Windows: .venv\Scripts\activate
+#   pip install -r requirements.txt
+
+numpy>=1.24
+scipy>=1.10
+paramiko>=3.0      # SSH/SFTP control of the ZedBoard
+matplotlib>=3.7    # capture-time visualization
