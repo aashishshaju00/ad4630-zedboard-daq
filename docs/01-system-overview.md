@@ -29,8 +29,7 @@ This separation is one of the main architectural choices in the project and driv
 The present signal chain is:
 
 **Differential analog source**  
-→ **optional external anti-alias filter**  
-→ **EVAL-AD4630-24FMCZ acquisition board**  
+→ **EVAL-AD4630-24FMCZ acquisition board** (ADA4945-1 front end, itself band-limited)  
 → **ZedBoard (Zynq-7020)**  
 → **local binary capture on embedded Linux**  
 → **Ethernet transfer to host PC**  
@@ -54,8 +53,8 @@ The host-side workflow uses:
 - **Python** for orchestration, remote execution, file transfer, and quick visualization
 - **MATLAB** for calibrated waveform analysis, validation, and further signal-processing work
 
-### External AA filter
-An external anti-alias filter stage is being added as a follow-on hardware improvement. This stage is intended to better control out-of-band content ahead of the ADC input and improve measurement integrity at higher usable bandwidths.
+### Why there's no external anti-alias filter
+I designed a dedicated 4th-order Butterworth Sallen-Key anti-alias filter from scratch (120 kHz corner), built it, and bench-characterized it — ±0.17 dB passband flatness, 116.5 kHz measured −3 dB point. It works. It just isn't in the signal chain, because the AD4630 eval board's own front end (the ADA4945-1 amplifier) already rolls off from around 48–53 kHz — well below my filter's 120 kHz corner. With the front end already band-limited that far down, and Nyquist at 250 kHz, a separate analog AA stage in front of it wouldn't have changed anything. The full design and measured response are still documented in [08 — AA Filter Design](08-aa-filter-design.md). The flip side — that same rolloff also attenuates the real signal I care about — is the subject of [06](06-frequency-rolloff-investigation.md) and [07](07-digital-compensation.md).
 
 ## Design Goals
 
@@ -122,7 +121,7 @@ At the current stage of development, the platform has demonstrated the following
 
 - **ADC resolution:** 24-bit converter platform
 - **input range:** ±5 V differential
-- **sample rate:** configurable, with operation validated up to 2 MSPS
+- **sample rate:** configurable up to 2 MSPS; operated and validated at 500 kSPS per channel
 - **channels:** 2 simultaneous channels available
 - **interface:** embedded local capture with Ethernet transfer
 - **buffer capacity:** 512 MB DDR3 on ZedBoard, supporting 170+ seconds of continuous capture at 500 kSPS
@@ -153,14 +152,14 @@ At the time of writing, the following parts of the system are already working:
 - local binary capture workflow
 - Ethernet-based host transfer
 - count-to-voltage calibration
+- custom anti-alias filter designed, built, and characterized (kept as a spare — not in the deployed chain)
 - analog front-end system identification
 - frequency-domain compensation in Python
 - frequency-domain compensation in MATLAB
 
 The following work is in progress:
 
-- external anti-alias filter build
-- integrated validation with the AA filter included in the signal chain
+- integrated validation with the AA filter installed in the full signal chain
 - expansion of documentation, figures, and build records
 
 ## How to Read the Rest of the Repository
@@ -168,10 +167,10 @@ The following work is in progress:
 This document introduces the full DAQ architecture. The remaining documentation breaks the build into more focused topics:
 
 - [02 — Hardware Architecture](02-hardware-architecture.md) explains the hardware stack and signal-chain components
-- [03 — ZedBoard + ADC Setup](03-zedboard-adc-setup.md) covers the ZedBoard and ADC platform setup
+- [03 — ZedBoard + ADC Setup](03-zedboard-adc-setup.md) covers the ZedBoard and ADC platform bring-up
 - [04 — Data Capture Workflow](04-data-capture-workflow.md) explains the acquisition and host-transfer flow
 - [05 — Calibration and Voltage Conversion](05-calibration-and-voltage-conversion.md) covers calibration and scaling
 - [06 — Frequency Rolloff Investigation](06-frequency-rolloff-investigation.md) documents the measured bandwidth limitation
 - [07 — Digital Compensation](07-digital-compensation.md) explains the compensation method and implementation details
 - [08 — AA Filter Design](08-aa-filter-design.md) documents the external anti-alias filter design
-- [09 — Field Deployment and Usage](09-field-deployment-and-usage.md) covers practical deployment workflow and usage notes
+- [09 — Field Deployment and Usage](09-field-deployment-and-usage.md) covers the end-to-end operating workflow
