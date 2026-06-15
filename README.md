@@ -2,7 +2,7 @@
 
 End-to-end design, build, and validation of a portable **24-bit, dual-channel, 500 kSPS data acquisition system** for broadband acoustic / ultrasonic measurement, built around the Analog Devices AD4630-24 and a Zynq-7000 (ZedBoard) embedded controller.
 
-This repo is an engineering build record. It documents the whole chain — signal-chain architecture, analog front-end characterization, calibration, a measurement-driven digital compensator, and a near-real-time capture + quality-assessment pipeline — with the reasoning behind the decisions, not just the final settings.
+This repo is an engineering build record. It documents the whole chain: signal-chain architecture, analog front-end characterization, calibration, a measurement-driven digital compensator, and a near-real-time capture + quality-assessment pipeline with the reasoning behind the decisions, not just the final settings.
 
 | Measured | |
 |---|---|
@@ -26,7 +26,7 @@ UAE sensor + preamp → ADA4945-1 FDA (AFE, on the AD4630 eval board) → AD4630
     → ZedBoard (Zynq-7020) → Gigabit Ethernet (isolated) → Host PC (Python / MATLAB)
 ```
 
-The analog source can be any compatible differential-output sensor within the ADC's input range. Note there is **no external anti-alias filter** in the deployed chain — the eval board's front end is already band-limited well below Nyquist, which made one redundant. (One was designed and built anyway; see [docs/08](docs/08-aa-filter-design.md) for that story.)
+The analog source can be any compatible differential-output sensor within the ADC's input range. Note there is **no external anti-alias filter** in the deployed chain - the eval board's front end is already band-limited well below Nyquist, which made one redundant. (One was designed and built anyway; see [docs/08](docs/08-aa-filter-design.md) for that story.)
 
 ### Core hardware
 - **ADC:** Analog Devices EVAL-AD4630-24FMCZ (24-bit, 2 MSPS-capable SAR)
@@ -36,20 +36,20 @@ The analog source can be any compatible differential-output sensor within the AD
 - **Host link:** Gigabit Ethernet (galvanic isolation via RJ-45 magnetics)
 
 ### Core software
-- **Python** — capture orchestration, file transfer, calibration, live quality glance
-- **MATLAB** — signal analysis, validation, and the field burst-quality pipeline
+- **Python** - capture orchestration, file transfer, calibration, live quality glance
+- **MATLAB** - signal analysis, validation, and the field burst-quality pipeline
 
 ---
 
 ## Design philosophy
 
-**Robust acquisition.** Capture runs locally on the ZedBoard and is transferred afterward, rather than streamed live — a network hiccup can't drop samples mid-capture.
+**Robust acquisition.** Capture runs locally on the ZedBoard and is transferred afterward, rather than streamed live; a network hiccup can't drop samples mid-capture.
 
 **Clean measurement environment.** Ethernet over USB, because the network hardware gives galvanic isolation for free, keeping the host out of the analog noise floor.
 
 **Separation of capture and analysis.** Python keeps hardware control lightweight; MATLAB does the heavy analysis. The *same* compensation math runs on both sides.
 
-**Characterize before correcting.** The front-end behavior was measured and modeled before any digital correction was applied, so the compensator is built on the system's real measured response — not on assumptions.
+**Characterize before correcting.** The front-end behavior was measured and modeled before any digital correction was applied, so the compensator is built on the system's real measured response.
 
 **Raw counts are the source of truth.** Captures save only the raw ADC counts plus metadata; calibrated and compensated signals are recomputed downstream. Smaller files, nothing can drift out of sync, and every old capture can be re-derived if the method improves.
 
