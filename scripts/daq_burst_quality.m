@@ -1,5 +1,5 @@
 %% daq_burst_quality.m - Field hammer-strike quality assessment
-%  ─────────────────────────────────────────────────────────────────────
+%  --------------------------------
 %  STANDALONE field script - single file, no external dependencies beyond
 %  built-in MATLAB toolboxes (Signal Processing Toolbox).
 %
@@ -45,11 +45,11 @@
 %       noise-only capture to produce noise_baseline.mat in DATA_DIR
 %    2. Set LOAD_MODE / USER_FILE at top, run.
 %    3. If noise_baseline.mat absent, legacy first-1s stats are used.
-% ─────────────────────────────────────────────────────────────────────
+% ---------------------------------
 clear; clc; close all;
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  │  RUN MODE                                                      
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % BATCH_MODE = false -> process ONE file (USER_FILE), full diagnostic
 %                      dashboard, manual KEEP/SKIP/KEEP_NOTE prompt.
 %                      Use this for tuning a problematic capture.
@@ -76,15 +76,15 @@ BURST_SAVE_IN_SINGLE_MODE = true;
 % (e.g. burst-merging in Specimen_4_P5). Off by default - verbose output
 % would dominate console during batch runs.
 UAE_REFINE_VERBOSE = true;
-% ─── Batch mode (BATCH_MODE = true) ─────────────────────────────────────
+% --- Batch mode (BATCH_MODE = true) -------------
 % Input list is GENERATED programmatically below from these knobs.
 % Edit SPECIMEN_IDS to a subset (e.g. [3 5]) for partial runs.
 SPECIMEN_IDS        = 1:11;
 MEASUREMENT_POINTS        = {'P1', 'P2', 'P3', 'P4', 'P5', 'P6'};
 %   P1–P6 are user-defined measurement points on the test article.
-% ════════════════════════════════════════════════════════════════════
+% ====================================
 %  │  PATHS                                                         
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 
 % =========================================================================
 %  DATASET SELECTOR - switch between measurement campaigns
@@ -126,25 +126,25 @@ NOISE_BASELINE_FILE = 'noise_baseline.mat';
 % batch mode uses the manifest table instead.
 LOG_FILENAME     = 'field_log.csv';
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 
 %  │  TUNING PARAMETERS                                              
 %  │  All tuning knobs in one place. Inline comments at usage sites  
 %  │  point back here; do NOT modify values inline below.            
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 
-% ── Field protocol ──────────────────────────────────────────────────────
+% -- Field protocol ------------------
 N_STRIKES_EXPECTED = 3;     % Number of hammer strikes expected per capture
 NOISE_BASELINE_S   = 0.25;   % first N seconds of capture used as noise ref
                             %   (only when noise_baseline.mat absent)
 
-% ── UAE bandpass (analysis band) ────────────────────────────────────────
+% -- UAE bandpass (analysis band) ----------------
 BP_LOW_HZ  = 20000;         % UAE band low edge
 BP_HIGH_HZ = 80000;         % UAE band high edge
 BP_ORDER   = 4;             % Butterworth order (zero-phase via filtfilt)
 
-% ── STAGE 1 - Impact-band burst detection (state machine) ───────────────
+% -- STAGE 1 - Impact-band burst detection (state machine) ---------------
 % Detection runs on 1–10 kHz IMPACT band. Single-sample OFF termination
 % prevents strike-merging across long inter-strike gaps.
 DET_F_MIN_HZ     = BP_LOW_HZ;  % drives STE/LL window sizing (200 µs window)
@@ -156,13 +156,13 @@ DET_LOCKOUT_S    = 0.2;        % min seconds between bursts (field protocol: 1�
 DET_PEAK_FLOOR_MULT = 100;     % min burst peak STE = N × noise median
                                %   ladder-down 100->75->50 if a specimen misses
 
-% ── STAGE 2 - Window extension (post-detection, hysteresis + cap) ───────
+% -- STAGE 2 - Window extension (post-detection, hysteresis + cap) -------
 % Extends each detected burst's end forward with hysteresis so windows
 % capture the full impact-band ringdown. Capped at next-strike-start - margin.
 DET_OFF_HYST_MS         = 50;   % ms below OFF required to terminate stage-2
 DET_NEXT_STRIKE_MARGIN_S = 0.10; % min gap between burst-N end & burst-(N+1) start
 
-% ── STAGE 2.5 - Strongest-N cap (post-stage-2, pre-refinement) ──────────
+% -- STAGE 2.5 - Strongest-N cap (post-stage-2, pre-refinement) ----------
 % When set to a finite number, after stage-2 produces N detected windows,
 % sort by peak STE descending and keep only the top MAX_BURSTS_CAP_GLOBAL.
 % Use this when raising DET_PEAK_FLOOR_MULT alone can't separate ghosts
@@ -178,7 +178,7 @@ DET_NEXT_STRIKE_MARGIN_S = 0.10; % min gap between burst-N end & burst-(N+1) sta
 % Default = inf (no cap). Set to 3 for problem captures.
 MAX_BURSTS_CAP_GLOBAL = 3;
 
-% ── STAGE 3 - UAE refinement (Hilbert envelope, finds defect window) ────
+% -- STAGE 3 - UAE refinement (Hilbert envelope, finds defect window) ----
 % After stage-2 produces wide impact-band windows, walks the Hilbert
 % envelope of the UAE bandpass to find the actual UAE-band onset/offset
 % (typically 100–700 ms inside the impact window).
@@ -208,41 +208,41 @@ UAE_REFINE_PEAK_SEARCH_S = 0.30; % seconds after impact window start to
                                  %   /walk-forward still operate over the
                                  %   full impact window after peak is found.
 
-% ── STAGE 4 - Head/tail extension (cosmetic, post-refinement) ───────────
+% -- STAGE 4 - Head/tail extension (cosmetic, post-refinement) -----------
 DET_HEAD_EXT_S  = 0.001;       % 1 ms pre-onset buffer
 DET_TAIL_EXT_S  = 0.020;       % 20 ms post-end buffer
 
-% ── Decay fit (per-burst on UAE-band envelope) ──────────────────────────
+% -- Decay fit (per-burst on UAE-band envelope) --------------
 DECAY_DYNAMIC_RANGE_DB = 25;   % fit from peak down to peak-25 dB
 
-% ── Welch PSD (for inter-strike PSD correlation) ────────────────────────
+% -- Welch PSD (for inter-strike PSD correlation) ------------
 WELCH_TARGET_AVG = 30;         % aim for ~30 averages per burst
 PSD_BAND_HZ      = [BP_LOW_HZ, BP_HIGH_HZ];
 
-% ── Impact-strength gate (1–10 kHz band structural-mode energy) ─────────
+% -- Impact-strength gate (1–10 kHz band structural-mode energy) ---------
 IMPACT_BAND_HZ           = [1000, 10000];
 IMPACT_MIN_DB_OVER_NOISE = 15;   % min impact-band SNR for burst to count
 
-% ── Quality thresholds (Good / Marginal cutoffs) ────────────────────────
+% -- Quality thresholds (Good / Marginal cutoffs) ------------
 SNR_GOOD_DB    = 35; SNR_MARG_DB    = 25;
 R2_GOOD        = 0.95; R2_MARG      = 0.85;
 PSDCORR_GOOD   = 0.80; PSDCORR_MARG = 0.60;
 TAU_MIN_MS     = 2;     % below this is too short to be a real ring-down
 TAU_MAX_MS     = 50;    % above this is physically implausible
 
-% ── Saturation (raw ADC counts; AD4630-24 24-bit signed -> ±2^23) ────────
+% -- Saturation (raw ADC counts; AD4630-24 24-bit signed -> ±2^23) --------
 SAT_FRACTION = 0.95;
 SAT_LIMIT    = SAT_FRACTION * 2^23;     % = 7,969,546
 
-% ── Drift check (capture STE median vs baseline) ────────────────────────
+% -- Drift check (capture STE median vs baseline) ------------
 DRIFT_WARN_DB    = 6;          % warn if drift > this many dB
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %    END OF USER-EDITABLE PARAMETERS                               
 %    Constants below (calibration, compensator, sysid) are FROZEN. 
 
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  CALIBRATION + COMPENSATOR CONSTANTS
 %    Compensator/sysid constants are FROZEN (used as-is below).
 %    Calibration gain/offset here is the FALLBACK: per-capture values from
@@ -277,13 +277,13 @@ SYSID_GAIN_CH1 = [0.9984, 0.9909, 0.9667, 0.9285, 0.8780, 0.8186, ...
 FC_CH0 = 48149;
 FC_CH1 = 48674;
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  │  BATCH ORCHESTRATION                                            
 %  │  Builds the file list, loads/creates the manifest, filters out  
 %  │  already-processed files (unless FORCE_REPROCESS), and opens    
 %  │  the per-file loop. Single-file mode collapses to a 1-element   
 %  │  list for code uniformity.                                      
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 
 % Build the input file list ----------------------------------------------
 if BATCH_MODE
@@ -394,9 +394,9 @@ if ~BATCH_MODE
     fprintf('Loaded user-specified: %s\n', load_name);
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  LOAD DATA
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 S  = load(filepath);
 fs = double(S.sample_rate);
 
@@ -422,9 +422,9 @@ fprintf('  Samples: %d   Duration: %.2f s   Fs: %.3f kSPS\n', N, N/fs, fs/1e3);
 ch0_V = ch0_raw * cal_g0 + cal_o0;
 ch1_V = ch1_raw * cal_g1 + cal_o1;
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  LOAD NOISE BASELINE (if available)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 baseline_path   = fullfile(DATA_DIR, NOISE_BASELINE_FILE);
 baseline_loaded = false;
 nb              = struct();   % placeholder; populated on successful load
@@ -454,17 +454,17 @@ else
         NOISE_BASELINE_S);
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  ADC SATURATION CHECK (on raw counts, BEFORE any processing)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 sat_mask_ch0 = abs(ch0_raw) >= SAT_LIMIT;
 sat_mask_ch1 = abs(ch1_raw) >= SAT_LIMIT;
 fprintf('  Saturation check (>%.0f%% of 2^23): Ch0 %d samples, Ch1 %d samples\n', ...
     SAT_FRACTION*100, nnz(sat_mask_ch0), nnz(sat_mask_ch1));
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  COMPENSATION (Method B Wiener - hardcoded inline)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 fprintf('  Applying Method B compensation...\n');
 tic;
 ch0_comp = apply_method_b(ch0_V, fs, SYSID_FREQS, SYSID_GAIN_CH0, ...
@@ -473,26 +473,26 @@ ch1_comp = apply_method_b(ch1_V, fs, SYSID_FREQS, SYSID_GAIN_CH1, ...
     FC_CH1, EPS_FLOOR, EPS_WALL, F_EDGE, DF_TRANS);
 fprintf('  Compensation: %.1f s\n', toc);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  BANDPASS 20–80 kHz (4th-order Butterworth, zero-phase) - UAE band
 %  used for all quality scoring (SNR, decay, PSDcorr).
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 [bp_b, bp_a] = butter(BP_ORDER, [BP_LOW_HZ, BP_HIGH_HZ] / (fs/2), 'bandpass');
 ch0_bp = filtfilt(bp_b, bp_a, ch0_comp);
 ch1_bp = filtfilt(bp_b, bp_a, ch1_comp);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  BANDPASS 1–10 kHz - IMPACT band, used for burst DETECTION (triggering).
 %  Moved up from later in the script (formerly computed alongside the
 %  per-burst impact_pass gate) so it's available when the detector runs.
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 [imp_b, imp_a] = butter(BP_ORDER, IMPACT_BAND_HZ / (fs/2), 'bandpass');
 ch0_imp = filtfilt(imp_b, imp_a, ch0_comp);
 ch1_imp = filtfilt(imp_b, imp_a, ch1_comp);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  BURST DETECTION - independent per channel, on IMPACT band
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % Build per-channel baseline stat sub-structs for the detector.
 % Pull the IMPACT-band stats produced by characterize_noise_baseline.m.
 % Empty struct -> detector falls back to first noise_dur_s of the contour.
@@ -519,9 +519,9 @@ end
     DET_F_MIN_HZ, DET_WIN_FACTOR, DET_NOISE_DUR_S, ...
     DET_ON_THRESH, DET_OFF_THRESH, DET_LOCKOUT_S, DET_PEAK_FLOOR_MULT, baseline_ch1);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  STAGE-2 WINDOW EXTENSION (post-detection, pre-refinement)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % detect_bursts_inline reliably finds N strikes (single-sample OFF
 % prevents merging across long inter-strike gaps), but may terminate
 % each window short of the visible decay extent if STE briefly dips
@@ -537,9 +537,9 @@ idx_ch0 = extend_burst_windows_to_decay(idx_ch0, ste_ch0, ll_ch0, thr_ch0, ...
 idx_ch1 = extend_burst_windows_to_decay(idx_ch1, ste_ch1, ll_ch1, thr_ch1, ...
     fs, DET_OFF_HYST_MS, DET_NEXT_STRIKE_MARGIN_S);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  STAGE 2.5 - STRONGEST-N CAP (per-channel, optional)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % When MAX_BURSTS_CAP_GLOBAL is finite (default = inf, no cap), keep only
 % the top N bursts per channel sorted by peak impact-band STE within each
 % burst's window. Chronological order of the kept bursts is preserved so
@@ -558,9 +558,9 @@ if isfinite(MAX_BURSTS_CAP_GLOBAL)
     end
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  UAE-BAND BURST-WINDOW REFINEMENT (Phase 5+)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % The impact-band detector returns burst windows that follow IMPACT-band
 % structural-mode ringdown - which lasts 1–5 seconds in metallic specimens. Using
 % these wide windows for analysis averages UAE signal over mostly post-
@@ -732,9 +732,9 @@ fprintf('  Bursts detected - Ch0: %d   Ch1: %d   (expected %d)\n', ...
 count_mismatch_ch0 = (n0 ~= N_STRIKES_EXPECTED);
 count_mismatch_ch1 = (n1 ~= N_STRIKES_EXPECTED);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  PER-BURST QUALITY METRICS
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 % (ch0_imp, ch1_imp already computed above before burst detection - Phase 5
 % architecture moved the impact-band filter creation up.)
 
@@ -776,9 +776,9 @@ verdict_ch1 = compute_verdicts(metrics_ch1, ...
     SNR_GOOD_DB, SNR_MARG_DB, R2_GOOD, R2_MARG, PSDCORR_GOOD, PSDCORR_MARG, ...
     TAU_MIN_MS, TAU_MAX_MS);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  FIGURES - three windows, screen-positioned for HP Spectre
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 scrsz   = get(groot, 'ScreenSize');
 screen_w = scrsz(3); screen_h = scrsz(4);
 margin   = 8; taskbar = 80;
@@ -821,11 +821,11 @@ draw_raw_time_domain(fig4, t, ch0_V, ch1_V, idx_ch0, idx_ch1, ...
 drawnow;
 figure(fig1);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  KEEP / SKIP / KEEP_NOTE PROMPT
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 fprintf('\n');
-fprintf('  ─────────────────────────────────────────────────────────\n');
+fprintf('  ---------------------\n');
 if BATCH_MODE
     fprintf('   [%d / %d]   %s   Bursts Ch0=%d Ch1=%d (expected %d)\n', ...
         batch_idx, n_total_to_process, load_name, n0, n1, N_STRIKES_EXPECTED);
@@ -857,10 +857,10 @@ switch choice
         fprintf('   Unrecognized choice - defaulting to KEEP.\n');
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  SAVE BURST FILE  (per-strike clips, 2 windows: imp-wide raw + UAE-narrow BP)
 %  Active in batch mode OR single-file mode when BURST_SAVE_IN_SINGLE_MODE.
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 save_active = do_save && (BATCH_MODE || BURST_SAVE_IN_SINGLE_MODE);
 if save_active
     burst_filename = sprintf('%s_bursts.mat', basename_no_ext);
@@ -877,11 +877,11 @@ elseif do_save && ~BATCH_MODE && ~BURST_SAVE_IN_SINGLE_MODE
     fprintf('   (Single-file mode, save disabled - set BURST_SAVE_IN_SINGLE_MODE=true to enable.)\n');
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  MANIFEST UPDATE - UPSERT  (replace existing row by basename match,
 %  else append). Lets you re-tune a problem capture in single-file mode
 %  and have the manifest row update cleanly instead of duplicating.
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 manifest_active = do_manifest && (BATCH_MODE || BURST_SAVE_IN_SINGLE_MODE);
 if manifest_active
     new_row = make_manifest_row(basename_no_ext, burst_path, decision, ...
@@ -902,9 +902,9 @@ if manifest_active
     fprintf('   Manifest %s: %d entries total.\n', op_label, height(manifest));
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  SINGLE-FILE LEGACY CSV LOG  (only in single-file mode)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 if ~BATCH_MODE
     log_path = fullfile(DATA_DIR, LOG_FILENAME);
     append_field_log(log_path, load_name, n0, n1, N_STRIKES_EXPECTED, ...
@@ -915,11 +915,11 @@ end
 
 fprintf('  Done.\n');
 
-end  % end batch loop ─────────────────────────────────────────────────────
+end  % end batch loop -----------------------------
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %  BATCH SUMMARY
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 if BATCH_MODE
     fprintf('\n');
     fprintf('  BATCH COMPLETE   |   Manifest: %s\n', manifest_path);
@@ -938,8 +938,8 @@ end
 
 
 
-%% ════════════════════════════════════════════════════════════════════
-%  ─────────────────  LOCAL FUNCTIONS 
+%% ====================================
+%  -----------------  LOCAL FUNCTIONS 
 
 function [burst_idx, ste, ll, thr] = detect_bursts_inline(sig, fs, f_min, ...
     win_factor, noise_dur_s, on_mult, off_mult, lockout_s, peak_floor_mult, ...
@@ -1431,7 +1431,7 @@ function draw_verdict_dashboard(fig, load_name, n0, n1, n_exp, ...
     figure(fig); clf;
     set(fig, 'Color', 'w');
 
-    % ── Header text ──
+    % -- Header text --
     any_sat = (~isempty(M0) && any([M0.saturated])) || ...
               (~isempty(M1) && any([M1.saturated]));
     cnt_ok = (n0 == n_exp) && (n1 == n_exp);
@@ -1449,7 +1449,7 @@ function draw_verdict_dashboard(fig, load_name, n0, n1, n_exp, ...
             ternary(any_sat, '   -> SATURATION DETECTED', '')), ...
         'HorizontalAlignment', 'left');
 
-    % ── Grid header row (Strike 1 / Strike 2 / Strike 3) ──
+    % -- Grid header row (Strike 1 / Strike 2 / Strike 3) --
     n_max = max([n_exp, n0, n1]);
     col_h = 0.05;
     grid_top = 0.86;
@@ -1613,7 +1613,7 @@ function idx_refined = refine_burst_hilbert(idx_imp, env, peak_thresh, off_thres
     idx_refined = zeros(nb, 2);
 
     if verbose
-        fprintf('\n  ─── refine_burst_hilbert diagnostic (%s, %d bursts) ───\n', ...
+        fprintf('\n  --- refine_burst_hilbert diagnostic (%s, %d bursts) ---\n', ...
             channel_label, nb);
         fprintf('       peak_thresh = %.4e   off_thresh_base = %.4e   k_peak_frac = %.3f\n', ...
             peak_thresh, off_thresh_base, k_peak_frac);
@@ -2004,9 +2004,9 @@ function y_comp = apply_method_b(y_in, fs, sysid_freqs, sysid_gain, fc_1p, ...
     y_comp = y_comp + y_dc;
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 %                     BATCH-MODE HELPER FUNCTIONS 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================
 
 function T = make_empty_manifest()
 % Empty manifest table with the canonical column types.
@@ -2077,17 +2077,17 @@ function save_burst_data(burst_path, basename, source_file, source_path, ...
     meta.n_strikes_ch0    = uint8(n_strikes_ch0);
     meta.n_strikes_ch1    = uint8(n_strikes_ch1);
 
-    % ─── windows ───────────────────────────
+    % --- windows ---------------
     windows.idx_ch0_uae = int32(idx_ch0_uae);
     windows.idx_ch1_uae = int32(idx_ch1_uae);
     windows.idx_ch0_imp = int32(idx_ch0_imp);
     windows.idx_ch1_imp = int32(idx_ch1_imp);
 
-    % ─── per-strike clips ─────────────────
+    % --- per-strike clips -----------------
     ch0 = extract_clips(ch0_comp, ch0_bp, idx_ch0_imp, idx_ch0_uae, fs);
     ch1 = extract_clips(ch1_comp, ch1_bp, idx_ch1_imp, idx_ch1_uae, fs);
 
-    % ─── assemble + save ──────
+    % --- assemble + save ------
     burst_data.meta      = meta;
     burst_data.decision  = decision;
     burst_data.note_text = note_text;

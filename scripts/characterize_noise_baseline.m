@@ -1,5 +1,5 @@
 %% characterize_noise_baseline.m - Environmental noise-floor characterization
-%  ─────────────────────────────────────────────────────────────────────
+%  ---------------------------------------------------------------------
 %  STANDALONE script that ingests a noise-only capture (sensors recording
 %  ambient, no hammer strikes) and produces noise_baseline.mat - a constants
 %  file used by daq_burst_quality.m for site-calibrated SNR references
@@ -29,12 +29,12 @@
 %
 %  Constants (sysid, calibration, compensator) are copied verbatim from
 %  daq_burst_quality.m and MUST stay identical byte-for-byte.
-% ─────────────────────────────────────────────────────────────────────
+% ---------------------------------------------------------------------
 clear; clc; close all;
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  USER SETTINGS
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 DATA_DIR  = 'E:\DAQ Data\Data_files\';
 
 % File loading mode
@@ -62,12 +62,12 @@ DET_WIN_FACTOR  = 4;
 TRANSIENT_WIN_S    = 0.1;   % 100 ms rolling RMS window
 TRANSIENT_RATIO_DB = 20;    % flag if any window exceeds median RMS by > 20 dB
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  CALIBRATION + COMPENSATOR CONSTANTS (verbatim from field script)
 %    Calibration gain/offset here is the FALLBACK: per-capture values from
 %    the .mat (gain_ch0/offset_ch0/...) are preferred at the conversion
 %    site; these apply only when a capture lacks them.
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 GAIN_CH0   = 0.0000006268;
 OFFSET_CH0 = -0.040402;
 GAIN_CH1   = 0.0000006355;
@@ -96,9 +96,9 @@ SYSID_GAIN_CH1 = [0.9984, 0.9909, 0.9667, 0.9285, 0.8780, 0.8186, ...
 FC_CH0 = 48149;
 FC_CH1 = 48674;
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  LOAD DATA
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 switch LOAD_MODE
     case 1
         files = dir(fullfile(DATA_DIR, FILE_PATTERN));
@@ -144,9 +144,9 @@ fprintf('  Samples: %d   Duration: %.2f s   Fs: %.3f kSPS\n', N, duration_s, fs/
 ch0_V = ch0_raw * cal_g0 + cal_o0;
 ch1_V = ch1_raw * cal_g1 + cal_o1;
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  COMPENSATION (Method B Wiener - hardcoded inline)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 fprintf('  Applying Method B compensation...\n');
 tic;
 ch0_comp = apply_method_b(ch0_V, fs, SYSID_FREQS, SYSID_GAIN_CH0, ...
@@ -155,9 +155,9 @@ ch1_comp = apply_method_b(ch1_V, fs, SYSID_FREQS, SYSID_GAIN_CH1, ...
     FC_CH1, EPS_FLOOR, EPS_WALL, F_EDGE, DF_TRANS);
 fprintf('  Compensation: %.1f s\n', toc);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  BANDPASS FILTERS (20-80 kHz for STE/SNR, 1-10 kHz for impact)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 [bp_b,  bp_a ] = butter(BP_ORDER, [BP_LOW_HZ, BP_HIGH_HZ] / (fs/2), 'bandpass');
 [imp_b, imp_a] = butter(BP_ORDER, IMPACT_BAND_HZ            / (fs/2), 'bandpass');
 
@@ -166,9 +166,9 @@ ch1_bp  = filtfilt(bp_b,  bp_a,  ch1_comp);
 ch0_imp = filtfilt(imp_b, imp_a, ch0_comp);
 ch1_imp = filtfilt(imp_b, imp_a, ch1_comp);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  TRANSIENT SANITY CHECK - is this actually a quiet recording?
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 % 100 ms rolling RMS of the band-passed signal. If any window's RMS is
 % more than TRANSIENT_RATIO_DB above the median rolling-RMS, that's a
 % candidate transient - warn the user but don't abort.
@@ -192,7 +192,7 @@ transient_flag     = transient_flag_ch0 || transient_flag_ch1;
 [~, imax_ch0] = max(roll_rms_ch0);
 [~, imax_ch1] = max(roll_rms_ch1);
 
-fprintf('\n  ─── Transient scan (100 ms rolling RMS) ───\n');
+fprintf('\n  --- Transient scan (100 ms rolling RMS) ---\n');
 fprintf('    Ch0  max/median = %+6.2f dB   (peak at t = %6.3f s)%s\n', ...
     ratio_db_ch0, t(imax_ch0), ternary(transient_flag_ch0, '    FLAGGED', ''));
 fprintf('    Ch1  max/median = %+6.2f dB   (peak at t = %6.3f s)%s\n', ...
@@ -206,9 +206,9 @@ if transient_flag
     fprintf('    not immune, to sustained transients).\n');
 end
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  COMPUTE NOISE STATISTICS - per channel
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 % Broadband and impact-band RMS (used as SNR / Impact-dB references)
 noise_rms_bp_ch0  = rms(ch0_bp);
 noise_rms_bp_ch1  = rms(ch1_bp);
@@ -220,14 +220,14 @@ win_dur     = DET_WIN_FACTOR / DET_F_MIN_HZ;           % seconds
 win_samples = max(1, round(win_dur * fs));
 win         = ones(win_samples, 1);
 
-% ── UAE-band (20-80 kHz) STE + LL - used by quality scoring downstream ──
+% -- UAE-band (20-80 kHz) STE + LL - used by quality scoring downstream --
 ste_ch0 = sqrt(conv(ch0_bp.^2, win, 'same') / win_samples);
 ste_ch1 = sqrt(conv(ch1_bp.^2, win, 'same') / win_samples);
 
 ll_ch0 = conv([0; abs(diff(ch0_bp))], win, 'same');
 ll_ch1 = conv([0; abs(diff(ch1_bp))], win, 'same');
 
-% ── Impact-band (1-10 kHz) STE + LL - used by field detector for triggering ──
+% -- Impact-band (1-10 kHz) STE + LL - used by field detector for triggering --
 % Same window size (200 µs) as UAE band - keeps statistics directly comparable
 % and matches the field-script detector. Impact-band STE has higher SNR for
 % strike detection (1-10 kHz carries ~40% of strike energy vs ~3% in UAE band),
@@ -239,7 +239,7 @@ ll_ch0_imp = conv([0; abs(diff(ch0_imp))], win, 'same');
 ll_ch1_imp = conv([0; abs(diff(ch1_imp))], win, 'same');
 
 % Robust statistics: median + 1.4826·MAD (σ-equivalent), plus 99th pct
-% ── UAE band ──
+% -- UAE band --
 ste_median_ch0 = median(ste_ch0);
 ste_mad_ch0    = 1.4826 * mad1(ste_ch0);
 ste_p99_ch0    = p99(ste_ch0);
@@ -256,7 +256,7 @@ ll_median_ch1  = median(ll_ch1);
 ll_mad_ch1     = 1.4826 * mad1(ll_ch1);
 ll_p99_ch1     = p99(ll_ch1);
 
-% ── Impact band ──
+% -- Impact band --
 ste_median_ch0_imp = median(ste_ch0_imp);
 ste_mad_ch0_imp    = 1.4826 * mad1(ste_ch0_imp);
 ste_p99_ch0_imp    = p99(ste_ch0_imp);
@@ -273,21 +273,21 @@ ll_median_ch1_imp  = median(ll_ch1_imp);
 ll_mad_ch1_imp     = 1.4826 * mad1(ll_ch1_imp);
 ll_p99_ch1_imp     = p99(ll_ch1_imp);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  CONSOLE SUMMARY
-% ═════════════════════════════════════════════════════════════════════
-fprintf('\n  ─── Noise statistics ────────────────────────────────\n');
+% =====================================================================
+fprintf('\n  --- Noise statistics --------------------------------\n');
 fprintf('                              Ch0           Ch1\n');
 fprintf('    RMS broadband (V) :   %.3e   %.3e\n',  noise_rms_bp_ch0,  noise_rms_bp_ch1);
 fprintf('    RMS 1-10 kHz  (V) :   %.3e   %.3e\n',  noise_rms_imp_ch0, noise_rms_imp_ch1);
-fprintf('    ── UAE band (20-80 kHz) ──\n');
+fprintf('    -- UAE band (20-80 kHz) --\n');
 fprintf('    STE median    (V) :   %.3e   %.3e\n',  ste_median_ch0, ste_median_ch1);
 fprintf('    STE 1.4826·MAD(V) :   %.3e   %.3e\n',  ste_mad_ch0,    ste_mad_ch1);
 fprintf('    STE 99th pct  (V) :   %.3e   %.3e\n',  ste_p99_ch0,    ste_p99_ch1);
 fprintf('    LL  median        :   %.3e   %.3e\n',  ll_median_ch0,  ll_median_ch1);
 fprintf('    LL  1.4826·MAD    :   %.3e   %.3e\n',  ll_mad_ch0,     ll_mad_ch1);
 fprintf('    LL  99th pct      :   %.3e   %.3e\n',  ll_p99_ch0,     ll_p99_ch1);
-fprintf('    ── Impact band (1-10 kHz) - used by field detector ──\n');
+fprintf('    -- Impact band (1-10 kHz) - used by field detector --\n');
 fprintf('    STE median    (V) :   %.3e   %.3e\n',  ste_median_ch0_imp, ste_median_ch1_imp);
 fprintf('    STE 1.4826·MAD(V) :   %.3e   %.3e\n',  ste_mad_ch0_imp,    ste_mad_ch1_imp);
 fprintf('    STE 99th pct  (V) :   %.3e   %.3e\n',  ste_p99_ch0_imp,    ste_p99_ch1_imp);
@@ -295,9 +295,9 @@ fprintf('    LL  median        :   %.3e   %.3e\n',  ll_median_ch0_imp,  ll_media
 fprintf('    LL  1.4826·MAD    :   %.3e   %.3e\n',  ll_mad_ch0_imp,     ll_mad_ch1_imp);
 fprintf('    LL  99th pct      :   %.3e   %.3e\n',  ll_p99_ch0_imp,     ll_p99_ch1_imp);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  PACK + SAVE noise_baseline.mat
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 noise_baseline = struct( ...
     'source_file',       load_name, ...
     'timestamp',         datestr(now, 'yyyy-mm-dd HH:MM:SS'), ...
@@ -350,12 +350,12 @@ output_path = fullfile(DATA_DIR, OUTPUT_FILENAME);
 save(output_path, 'noise_baseline');
 fprintf('\n  ✓ Saved noise baseline → %s\n', output_path);
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  DIAGNOSTIC FIGURE - 3×2 layout
 %    Row 1:  Ch0 waveform                | Ch1 waveform
 %    Row 2:  Ch0 Welch PSD               | Ch1 Welch PSD
 %    Row 3:  Ch0+Ch1 rolling RMS         | STE histograms (Ch0+Ch1)
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 fig = figure('Color', 'w', 'Name', 'Noise Baseline Characterization');
 try
     fig.WindowState = 'maximized';
@@ -373,7 +373,7 @@ else
 end
 title(tl, title_str, 'FontWeight', 'bold', 'Interpreter', 'tex');
 
-% ── Row 1: waveforms ──
+% -- Row 1: waveforms --
 ax = nexttile(tl);
 plot(ax, t, ch0_bp, 'Color', [0.78 0.13 0.13], 'LineWidth', 0.5);
 grid(ax, 'on'); ax.GridAlpha = 0.25;
@@ -389,7 +389,7 @@ ylabel(ax, 'Ch1  (V)');
 title(ax, 'Ch1 - Compensated, 20-80 kHz band-passed', 'FontWeight', 'bold');
 ylim(ax, ylim_wave);
 
-% ── Row 2: Welch PSDs (full-band, log-x) ──
+% -- Row 2: Welch PSDs (full-band, log-x) --
 nfft = 2^nextpow2(min(N, 131072));
 [pxx0, f_psd] = pwelch(ch0_comp, hann(nfft), nfft/2, nfft, fs, 'power');
 [pxx1, ~]     = pwelch(ch1_comp, hann(nfft), nfft/2, nfft, fs, 'power');
@@ -412,7 +412,7 @@ xlim(ax, [0.1, fs/2e3]);
 xlabel(ax, 'Frequency  (kHz)'); ylabel(ax, 'Ch1  (dBV^2)');
 title(ax, 'Ch1 - Welch PSD (compensated)', 'FontWeight', 'bold');
 
-% ── Row 3a: Rolling RMS (transient check) ──
+% -- Row 3a: Rolling RMS (transient check) --
 ax = nexttile(tl);
 plot(ax, t, 20*log10(roll_rms_ch0 / max(med_rms_ch0, eps)), ...
     'Color', [0.78 0.13 0.13], 'LineWidth', 0.8, 'DisplayName', 'Ch0'); hold(ax, 'on');
@@ -428,7 +428,7 @@ title(ax, sprintf('Rolling RMS (%.0f ms window) - transient check', ...
     TRANSIENT_WIN_S*1e3), 'FontWeight', 'bold');
 legend(ax, 'Location', 'best', 'Box', 'off');
 
-% ── Row 3b: STE histograms (log x) ──
+% -- Row 3b: STE histograms (log x) --
 ax = nexttile(tl);
 edges = logspace(log10(max(min([ste_ch0; ste_ch1]), eps)), ...
                  log10(max(max(ste_ch0), max(ste_ch1))*1.1), 80);
@@ -449,9 +449,9 @@ legend(ax, 'Location', 'northeast', 'Box', 'off');
 
 fprintf('\n  Diagnostic figure drawn. Inspect, then close to finish.\n');
 
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 %  HELPER FUNCTIONS
-% ═════════════════════════════════════════════════════════════════════
+% =====================================================================
 
 function add_band_patches(ax, imp_band, bp_band)
 % Shade the impact (1-10 kHz) and analysis (20-80 kHz) bands on a PSD axis.

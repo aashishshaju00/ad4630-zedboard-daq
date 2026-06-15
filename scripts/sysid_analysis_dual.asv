@@ -121,7 +121,7 @@ for fi = 1:n_freqs
     for ri = 1:n_repeats
         x = volt_waveforms(:, fi, ri);
 
-        % -- Method 1: Lock-in projection 
+        % ── Method 1: Lock-in projection 
         trim_samp = round(trim_cycles / f0 * fs);
         if 2*trim_samp < n_samples - 100
             x_trim = x(trim_samp+1 : end-trim_samp);
@@ -142,7 +142,7 @@ for fi = 1:n_freqs
         amp_lockin(fi, ri) = sqrt(I_val^2 + Q_val^2);
         phase_lockin(fi, ri) = atan2d(Q_val, I_val);
 
-        % -- Method 2: FFT peak 
+        % ── Method 2: FFT peak 
         X_fft = fft(x .* win);
         fft_freqs = (0:n_samples-1)' * fs / n_samples;
         mag_fft = 2 * abs(X_fft) / win_sum;
@@ -159,7 +159,7 @@ for fi = 1:n_freqs
             amp_fft(fi, ri) = 0;
         end
 
-        % -- Method 3: Least-squares sine fit 
+        % ── Method 3: Least-squares sine fit 
         % Model: x(t) = A*cos(2π f0 t) + B*sin(2π f0 t) + C
         % This is LINEAR in [A, B, C] → direct solution via \
         M = [cos(2*pi*f0*t_trim), sin(2*pi*f0*t_trim), ones(N_trim, 1)];
@@ -294,7 +294,7 @@ col_fft = [0.80 0.15 0.15];
 col_sinfit = [0.10 0.55 0.30];
 col_schem = [0.55 0.55 0.80];
 
-% -- [Left] Amplitude comparison ------------------------------
+% ── [Left] Amplitude comparison ──────────────────────────────
 subplot(1, 2, 1);
 hold on; grid on; box on;
 
@@ -313,7 +313,7 @@ ylabel('Amplitude (V peak)', 'FontSize', 11);
 title('Three-Method Amplitude Comparison', 'FontSize', 12, 'FontWeight', 'bold');
 legend('Location', 'northeast', 'FontSize', 9);
 
-% -- [Right] Percent difference relative to sine fit ----------
+% ── [Right] Percent difference relative to sine fit ──────────
 subplot(1, 2, 2);
 hold on; grid on; box on;
 
@@ -422,13 +422,13 @@ fprintf('=== MODEL FITTING (magnitude only, using %s) ===\n\n', method_label);
 
 fc_schematic = 1 / (2 * pi * SCHEMATIC_R * SCHEMATIC_C);
 
-% -- Fit options --
+% ── Fit options ──
 opts = optimoptions('lsqcurvefit', ...
     'Display', 'off', 'MaxIterations', 5000, ...
     'MaxFunctionEvaluations', 10000, ...
     'TolFun', 1e-14, 'TolX', 1e-14);
 
-% -- Fit 1: Single pole + free gain --------------------------
+% ── Fit 1: Single pole + free gain ──────────────────────────
 fprintf('Fit 1: Single pole + gain ...\n');
 model_1p = @(p, f) p(2) ./ sqrt(1 + (f./p(1)).^2);
 
@@ -462,7 +462,7 @@ catch ME
 end
 fprintf('\n');
 
-% -- Fit 2: Two poles + free gain -----------------------------
+% ── Fit 2: Two poles + free gain ─────────────────────────────
 fprintf('Fit 2: Two poles + gain ...\n');
 model_2p = @(p, f) p(3) ./ (sqrt(1 + (f./p(1)).^2) .* sqrt(1 + (f./p(2)).^2));
 
@@ -499,7 +499,7 @@ catch ME
 end
 fprintf('\n');
 
-% -- Fit 3: Single pole, gain fixed at input_vpeak -----------
+% ── Fit 3: Single pole, gain fixed at input_vpeak ───────────
 fprintf('Fit 3: Single pole, fixed gain = %.2f V ...\n', input_vpeak);
 model_1pf = @(p, f) input_vpeak ./ sqrt(1 + (f./p(1)).^2);
 
@@ -581,7 +581,7 @@ fig3 = figure('Name', 'Bode Magnitude', ...
 
 f_plot = logspace(log10(max(freqs(1)*0.5, 100)), log10(freqs(end)*2), 500);
 
-% -- [Top] Bode plot --
+% ── [Top] Bode plot ──
 ax1 = subplot(2, 2, [1 2]);
 hold on; grid on; box on;
 set(ax1, 'XScale', 'log', 'FontSize', 10);
@@ -619,7 +619,7 @@ title(sprintf('Bode Magnitude - %d points, %d repeats, %s', ...
     n_freqs, n_repeats, method_label), 'FontSize', 12, 'FontWeight', 'bold');
 xlim([freqs(1)/1e3 * 0.7, freqs(end)/1e3 * 1.5]);
 
-% -- [Bottom-left] Residuals --
+% ── [Bottom-left] Residuals ──
 ax2 = subplot(2, 2, 3);
 hold on; grid on; box on;
 if fit1_ok
@@ -638,7 +638,7 @@ yline(0, 'k-', 'LineWidth', 0.5);
 xlabel('Frequency (kHz)'); ylabel('Residual (mV)');
 title('Magnitude Residuals'); legend('Location', 'best', 'FontSize', 8);
 
-% -- [Bottom-right] Fractional residuals --
+% ── [Bottom-right] Fractional residuals ──
 ax3 = subplot(2, 2, 4);
 hold on; grid on; box on;
 if fit1_ok
@@ -717,7 +717,7 @@ fprintf('\n=== ADC CLOCK OFFSET CHARACTERIZATION ===\n\n');
 
 fs_nominal = fs;   % 500000 Hz (what we told iio_attr)
 
-% -- Test 1: Estimate fs_actual from exact FFT peak bin position --
+% ── Test 1: Estimate fs_actual from exact FFT peak bin position ──
 %   For each tone at f0 (Siglent), the FFT peak lands at bin k where:
 %     k = f0 * N / fs_actual
 %   Therefore: fs_actual = f0 * N / k
@@ -780,7 +780,7 @@ fprintf('  fs_actual = %.3f ± %.3f Hz\n', fs_actual_mean, fs_actual_std);
 fprintf('  Δfs       = %+.3f Hz  (%+.2f ppm)\n', delta_fs, ppm_offset);
 fprintf('  (Positive = ADC clock runs fast, negative = slow)\n\n');
 
-% -- Test 2: Sinc envelope fit --
+% ── Test 2: Sinc envelope fit ──
 %  The lock-in attenuation should follow:
 %    amp_lockin / amp_fft = |sinc(T * f0 * Δfs / fs^2 * pi)|
 %  where T = capture duration in seconds.
@@ -815,7 +815,7 @@ fprintf('  Δfs_sinc  = %+.3f Hz  (%+.2f ppm)\n', dfs_sinc, ppm_sinc);
 % Check agreement with Test 1
 fprintf('  Agreement with Test 1: %.3f Hz difference\n\n', abs(delta_fs - dfs_sinc));
 
-% -- Test 3: Repeat-to-repeat stability
+% ── Test 3: Repeat-to-repeat stability
 %  Is the offset constant across captures (fixed crystal) or
 %  variable (jitter/drift)?
 
@@ -833,7 +833,7 @@ fprintf('  Mean of per-freq σ: %.3f Hz\n', mean(std(fs_estimates(good_mask,:), 
 fprintf('  Spread of per-freq means: %.3f Hz\n', std(fs_est_avg(good_mask)));
 fprintf('\n');
 
-% -- Classification --
+% ── Classification ──
 fprintf('  ASSESSMENT: ');
 if fs_actual_std < 1.0
     fprintf('FIXED offset (crystal-dominated).\n');
@@ -845,7 +845,7 @@ else
 end
 fprintf('\n');
 
-% -- Figure: Sinc envelope validation --
+% ── Figure: Sinc envelope validation ──
 fig_clk = figure('Name', 'ADC Clock Characterization', ...
     'Position', [120 120 1300 500], 'Color', [0.97 0.96 0.95]);
 
