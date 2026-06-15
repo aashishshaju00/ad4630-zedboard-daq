@@ -1,4 +1,4 @@
-# 24-bit / 500 kSPS Portable Acoustic DAQ — Build & Validation
+# 24-bit High Speed Portable Acoustic DAQ - Build & Validation
 
 End-to-end design, build, and validation of a portable **24-bit, dual-channel, 500 kSPS data acquisition system** for broadband acoustic / ultrasonic measurement, built around the Analog Devices AD4630-24 and a Zynq-7000 (ZedBoard) embedded controller.
 
@@ -69,7 +69,7 @@ The analog source can be any compatible differential-output sensor within the AD
 | [08 — Anti-Alias Filter Design](docs/08-aa-filter-design.md) | The filter that was designed but not deployed |
 | [09 — Deployment & Usage](docs/09-field-deployment-and-usage.md) | Field setup, run workflow, troubleshooting |
 | [10 — Burst-Quality Pipeline](docs/10-burst-quality-pipeline.md) | Per-strike detection, scoring, and GOOD/BAD verdicts |
-| [Interactive UART diagnostics](https://USERNAME.github.io/REPOSITORY/zedboard-uart-diagnostics.html) | USB-UART checks for network recovery, IIO status, local capture testing, shutdown, and staged recovery |
+| [Interactive UART diagnostics](https://aashishshaju00.github.io/ad4630-zedboard-daq/docs/ZedBoard_DAQ_SOP.html) | USB-UART checks for network recovery, IIO status, local capture testing, shutdown, and staged recovery |
 ---
 
 ## Repository structure
