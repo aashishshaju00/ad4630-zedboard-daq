@@ -14,9 +14,9 @@ import subprocess
 import sys
 import time
 
-# ╔═══════════════════════════════════════════════════════════════════╗
-# ║  USER CONFIG                                                      ║
-# ╚═══════════════════════════════════════════════════════════════════╝
+# ===================================================================
+#   USER CONFIG                                                      
+# ===================================================================
 ZED_IP   = "192.168.1.100"
 ZED_USER = "root"
 ZED_PASS = os.environ.get("ZED_PASS", "analog")   # from env var ZED_PASS; falls back to the stock ADI Kuiper default

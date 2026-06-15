@@ -14,7 +14,7 @@ import numpy as np
 import paramiko
 import os
 
-# ── CONFIG ──────────────────────────────────────────────────
+# -- CONFIG --------------------------------------------------
 CHANNEL = 1              # <<< SET THIS: 0 for Ch0, 1 for Ch1
 
 ZED_IP   = "192.168.1.100"
@@ -76,7 +76,7 @@ def fit_calibration(voltages, counts, label):
     se_gain     = se_residual / np.sqrt(ss_counts) if ss_counts > 0 else float('nan')
     se_offset   = se_residual * np.sqrt(1/n + count_mean**2 / ss_counts) if ss_counts > 0 else float('nan')
 
-    print(f"\n  ── {label} ──")
+    print(f"\n  -- {label} --")
     print(f"  GAIN:       {GAIN:.10f} V/count  (± {se_gain:.2e})")
     print(f"  OFFSET:     {OFFSET:.6f} V         (± {se_offset:.2e})")
     print(f"  R²:         {r_squared:.10f}")
@@ -89,7 +89,7 @@ def fit_calibration(voltages, counts, label):
     return GAIN, OFFSET, r_squared
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 if __name__ == '__main__':
     ch_name  = f"Ch{CHANNEL}"
     in_plus  = "J2 (IN0+)" if CHANNEL == 0 else "J4 (IN1+)"

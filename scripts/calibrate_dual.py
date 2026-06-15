@@ -14,9 +14,9 @@ import numpy as np
 import paramiko
 import os
 
-# ╔═══════════════════════════════════════════════════════════════════╗
-# ║  USER CONFIG                                                      ║
-# ╚═══════════════════════════════════════════════════════════════════╝
+# ===================================================================
+#   USER CONFIG                                                      
+# ===================================================================
 ZED_IP   = "192.168.1.100"
 ZED_USER = "root"
 ZED_PASS = os.environ.get("ZED_PASS", "analog")   # from env var ZED_PASS; falls back to the stock ADI Kuiper default
@@ -78,7 +78,7 @@ def fit_calibration(voltages, counts, label):
     se_gain     = se_residual / np.sqrt(ss_counts) if ss_counts > 0 else float('nan')
     se_offset   = se_residual * np.sqrt(1/n + count_mean**2 / ss_counts) if ss_counts > 0 else float('nan')
 
-    print(f"\n  ── {label} ──")
+    print(f"\n  -- {label} --")
     print(f"  GAIN:       {GAIN:.10f} V/count  (± {se_gain:.2e})")
     print(f"  OFFSET:     {OFFSET:.6f} V         (± {se_offset:.2e})")
     print(f"  R²:         {r_squared:.10f}")
@@ -91,9 +91,9 @@ def fit_calibration(voltages, counts, label):
     return GAIN, OFFSET, r_squared
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  MAIN
-# ════════════════════════════════════════════════════════════
+# ============================================================
 if __name__ == '__main__':
     print("=" * 60)
     print("  DUAL-CHANNEL DC CALIBRATION (Ch0 + Ch1)")
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         print("Need at least 2 points. Exiting.")
         exit()
 
-    # ── Fit both channels ──
+    # -- Fit both channels --
     print()
     print("=" * 60)
     print("  CALIBRATION RESULTS")
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     print(f"  OFFSET_CH1 = {o1:.6f}")
     print()
 
-    # ── Quick AFE sanity check ──
+    # -- Quick AFE sanity check --
     # At 0V DC, the offset difference tells us about AFE mismatch
     if 0.0 in voltages:
         idx = voltages.index(0.0)

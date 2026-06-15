@@ -12,16 +12,16 @@ from acquisition_io import (
     ensure_output_directory,
 )
 
-# ╔═══════════════════════════════════════════════════════════════════╗
+# ╔===================================================================╗
 # ║  USER CONFIG — edit these for your setup                          ║
-# ╚═══════════════════════════════════════════════════════════════════╝
+# ╚===================================================================╝
 
-# ── Hardware / Network ──────────────────────────────────────
+# -- Hardware / Network --------------------------------------
 ZED_IP   = "192.168.1.100"
 ZED_USER = "root"
 ZED_PASS = os.environ.get("ZED_PASS", "analog")   # from env var ZED_PASS; falls back to the stock ADI Kuiper default
 
-# ── ADC Calibration (FRESH — from calibrate_dual.py) ────────
+# -- ADC Calibration (FRESH — from calibrate_dual.py) --------
 GAIN_CH0   = 0.0000006268
 OFFSET_CH0 = -0.040402
 GAIN_CH1   = 0.0000006355
@@ -29,7 +29,7 @@ OFFSET_CH1 = 0.000751
 
 FS = 500000          # 500 kSPS
 
-# ── Capture Settings ────────────────────────────────────────
+# -- Capture Settings ----------------------------------------
 CAPTURE_SECONDS = 2      # seconds per capture
 TOTAL_SAMPLES   = CAPTURE_SECONDS * FS
 IIO_BUFFER_SIZE = 200000
@@ -37,10 +37,10 @@ REMOTE_BIN      = "/tmp/capture.bin"
 CAPTURE_TIMEOUT_MARGIN_S = 15    # grace over CAPTURE_SECONDS before a capture is abandoned
 MAX_CAPTURE_RETRIES      = 2     # extra attempts per rep before aborting the sweep
 
-# ── Save Directory ──────────────────────────────────────────
+# -- Save Directory ------------------------------------------
 SAVE_DIR = "E:\\DAQ Data\\Data_files\\sysid_final\\"
 
-# ── Sweep Configuration ─────────────────────────────────────
+# -- Sweep Configuration -------------------------------------
 INPUT_VPP   = 4.0                # Siglent setting (Vpp)
 INPUT_VPEAK = INPUT_VPP / 2.0    # Peak voltage
 N_REPEATS   = 3                  # captures per frequency
@@ -55,9 +55,9 @@ SWEEP_FREQS = [1000, 5000, 10000, 15000, 20000, 25000,
 SETTLE_SECONDS = 0.3
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  HARDWARE HELPERS
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 def ssh_connect():
     ssh = paramiko.SSHClient()
@@ -72,9 +72,9 @@ def ssh_connect():
 # unit-tested). ssh_connect stays here because it owns this script's credentials.
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  MAIN — PER-CHANNEL SYSID SWEEP (two passes: Ch0, then Ch1)
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 if __name__ == '__main__':
 
@@ -83,9 +83,9 @@ if __name__ == '__main__':
     n_freqs = len(SWEEP_FREQS)
 
     print()
-    print("═" * 65)
+    print("=" * 65)
     print("  PER-CHANNEL SYSID — FINAL CALIBRATION")
-    print("═" * 65)
+    print("=" * 65)
     print()
     print("  This script runs TWO passes:")
     print("    Pass 1: Ch0 only (sig gen → J2/IN0+, J1/IN0− → GND)")
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     print(f"    Amplitude:  {INPUT_VPP} Vpp, Sine, Hi-Z, Output ON")
     print()
 
-    # ── Connect to ZedBoard ──
+    # -- Connect to ZedBoard --
     try:
         ssh = ssh_connect()
         print("  ZedBoard connected.")
@@ -110,9 +110,9 @@ if __name__ == '__main__':
         print(f"ERROR: Cannot connect to ZedBoard ({e})")
         sys.exit(1)
 
-    # ════════════════════════════════════════════════════════
+    # ========================================================
     #  RUN BOTH PASSES
-    # ════════════════════════════════════════════════════════
+    # ========================================================
 
     for ch_idx in [0, 1]:
         ch_name = f"Ch{ch_idx}"
@@ -120,9 +120,9 @@ if __name__ == '__main__':
         in_minus = "J1 (IN0−)" if ch_idx == 0 else "J3 (IN1−)"
 
         print()
-        print("═" * 65)
+        print("=" * 65)
         print(f"  PASS {ch_idx + 1}/2 — {ch_name} SYSID")
-        print("═" * 65)
+        print("=" * 65)
         print()
         print(f"  Wiring:")
         print(f"    Sig gen BNC → SMA adapter → SMA cable → {in_plus}")
@@ -189,7 +189,7 @@ if __name__ == '__main__':
 
             print()
 
-        # ── Save this pass ──
+        # -- Save this pass --
         mat_name = f"sysid_final_ch{ch_idx}.mat"
         mat_path = os.path.join(SAVE_DIR, mat_name)
         print(f"  Saving {mat_path} ...")
@@ -227,12 +227,12 @@ if __name__ == '__main__':
         # Free memory before next pass
         del all_ch0, all_ch1
 
-    # ── Cleanup ──
+    # -- Cleanup --
     for warning in cleanup_capture_resources(ssh, REMOTE_BIN, local_bin):
         print(f"  Cleanup warning: {warning}")
 
     print()
-    print("═" * 65)
+    print("=" * 65)
     print("  COLLECTION COMPLETE — BOTH CHANNELS")
     print(f"  Output files:")
     print(f"    {SAVE_DIR}sysid_final_ch0.mat")
@@ -244,4 +244,4 @@ if __name__ == '__main__':
     print(f"    freqs_Hz:         frequency vector")
     print()
     print(f"  Next: run sysid_analysis_dual.m in MATLAB")
-    print("═" * 65)
+    print("=" * 65)

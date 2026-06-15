@@ -47,16 +47,16 @@ from acquisition_io import (
     run_remote_capture,
 )
 
-# ╔═══════════════════════════════════════════════════════════════════╗
+# ╔===================================================================╗
 # ║  USER CONFIG — edit these for your setup                          ║
-# ╚═══════════════════════════════════════════════════════════════════╝
+# ╚===================================================================╝
 
-# ── Hardware / Network ──────────────────────────────────────
+# -- Hardware / Network --------------------------------------
 ZED_IP   = "192.168.1.100"     # ZedBoard static IP (set via UART — see docs/03)
 ZED_USER = "root"
 ZED_PASS = os.environ.get("ZED_PASS", "analog")   # from env var ZED_PASS; falls back to the stock ADI Kuiper default
 
-# ── ADC Calibration (per channel; from the per-channel multi-point method (calibrate_dual.py), docs/05) ──
+# -- ADC Calibration (per channel; from the per-channel multi-point method (calibrate_dual.py), docs/05) --
 GAIN_CH0   = 0.0000006268      # V/count
 OFFSET_CH0 = -0.040402         # V
 GAIN_CH1   = 0.0000006355
@@ -64,19 +64,19 @@ OFFSET_CH1 = 0.000751
 
 FS = 500000          # 500 kSPS nominal (measured: 500003.84 Hz, +7.7 ppm)
 
-# ── Capture Settings ────────────────────────────────────────
+# -- Capture Settings ----------------------------------------
 CAPTURE_SECONDS = 10
 TOTAL_SAMPLES   = CAPTURE_SECONDS * FS
 IIO_BUFFER_SIZE = 200000
 REMOTE_BIN      = "/tmp/capture.bin"
 CAPTURE_TIMEOUT_MARGIN_S = 15
 
-# ── Save Directory (host) ───────────────────────────────────
+# -- Save Directory (host) -----------------------------------
 SAVE_DIR = r"E:\DAQ Data\Data_files"
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  AFE COMPENSATION — Method B (Cepstral Min-Phase Wiener)
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #
 # ROOT CAUSE: ADA4945-1 FDA feedback network (C18/C24 2700 pF + R16/R26 1kΩ)
 #   creates 1st-order LP rolloff ~48 kHz (wiring-dependent), with
@@ -88,13 +88,13 @@ SAVE_DIR = r"E:\DAQ Data\Data_files"
 # Phase is derived via cepstral method (Hilbert transform of log-magnitude)
 # — validated to sub-1° accuracy against hardware measurements.
 
-# ── Compensator Design Parameters ───────────────────────────
+# -- Compensator Design Parameters ---------------------------
 EPS_FLOOR = 1e-4          # regularization floor (keeps inverse stable)
 EPS_WALL  = 50            # regularization wall (kills signal above f_edge)
 F_EDGE    = 135000        # Hz — rolloff center
 DF_TRANS  = 3000          # Hz — transition half-width
 
-# ── Sysid Data: 24-point single-channel measurements ────────
+# -- Sysid Data: 24-point single-channel measurements --------
 # Source: freq_sweep_sysid_dual.py → sysid_analysis_dual.m → sysid_final_results.mat
 SYSID_FREQS = np.array([
     1000, 5000, 10000, 15000, 20000, 25000,
@@ -122,16 +122,16 @@ SYSID_GAIN_CH1 = np.array([
 FC_CH0 = 48149.0   # Hz
 FC_CH1 = 48674.0   # Hz
 
-# ── Visualization Settings ──────────────────────────────────
+# -- Visualization Settings ----------------------------------
 ZOOM_MS      = 0.5
 FFT_WINDOW   = 'hann'
 MAX_PLOT_PTS = 50000
 WELCH_TARGET_AVG = 200   # adaptive NFFT target (~averages with 50% overlap)
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  COMPENSATION — Single-FFT approach
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 def _build_magnitude_on_grid(f, sysid_freqs, sysid_gain, fc_1p):
     """Interpolate measured |H_AFE| onto an arbitrary frequency grid.
@@ -263,34 +263,34 @@ def apply_compensation(signal, sysid_freqs, sysid_gain, fc_1p, fs,
     """
     N = len(signal)
 
-    # ── Step 1: Forward FFT (positive frequencies only) ──
+    # -- Step 1: Forward FFT (positive frequencies only) --
     X = np.fft.rfft(signal)                  # shape: (N//2 + 1,)
     f = np.fft.rfftfreq(N, 1.0 / fs)        # shape: (N//2 + 1,)
 
-    # ── Step 2: Build |H_AFE(f)| on this grid ──
+    # -- Step 2: Build |H_AFE(f)| on this grid --
     mag = _build_magnitude_on_grid(f, sysid_freqs, sysid_gain, fc_1p)
 
-    # ── Step 3: Compute minimum phase ──
+    # -- Step 3: Compute minimum phase --
     phi = _cepstral_min_phase(mag, N)
 
-    # ── Step 4: Form complex AFE model ──
+    # -- Step 4: Form complex AFE model --
     H_afe = mag * np.exp(1j * phi)
 
-    # ── Step 5: Frequency-dependent regularization ──
+    # -- Step 5: Frequency-dependent regularization --
     sigmoid = 0.5 * (1.0 + np.tanh((f - f_edge) / df_trans))
     eps_f = eps_floor + eps_wall * sigmoid
 
-    # ── Step 6: Wiener inverse ──
+    # -- Step 6: Wiener inverse --
     G = np.conj(H_afe) / (np.abs(H_afe)**2 + eps_f)
 
-    # ── Step 7: Apply and inverse FFT ──
+    # -- Step 7: Apply and inverse FFT --
     X_comp = X * G
     return np.fft.irfft(X_comp, n=N)
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  HELPERS — CAPTURE
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 def ssh_connect():
     ssh = paramiko.SSHClient()
@@ -318,9 +318,9 @@ def render_progress(message, elapsed, duration):
     sys.stdout.flush()
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  HELPERS — SIGNAL PROCESSING
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 def compute_fft(data, fs, window='hann'):
     N = len(data)
@@ -345,9 +345,9 @@ def find_peaks_in_fft(freqs, magnitude, n_peaks=5, min_freq=500):
     return [(f_search[i], m_search[i]) for i in top_idx]
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  VISUALIZATION
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 
 
@@ -446,7 +446,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     comp0_ac = ch0_comp - dc0
     comp1_ac = ch1_comp - dc1
 
-    # ── Adaptive NFFT (matches MATLAB rule in daq_analysis_dual_v3.m) ──
+    # -- Adaptive NFFT (matches MATLAB rule in daq_analysis_dual_v3.m) --
     target_avg = WELCH_TARGET_AVG
     nfft_raw   = 2 * N / target_avg
     nfft       = int(2 ** round(np.log2(max(nfft_raw, 4096.0))))
@@ -456,7 +456,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     n_avg      = max(1, (N - n_overlap) // (nfft - n_overlap))
     df_bin_Hz  = fs / nfft
 
-    # ── Welch PSD: 'spectrum' scaling = V² per bin (= MATLAB pwelch 'power') ──
+    # -- Welch PSD: 'spectrum' scaling = V² per bin (= MATLAB pwelch 'power') --
     f_Hz, pxx0 = sig.welch(comp0_ac, fs=fs, window='hann', nperseg=nfft,
                             noverlap=n_overlap, nfft=nfft, scaling='spectrum',
                             detrend=False, return_onesided=True)
@@ -472,7 +472,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     peaks_ch1 = _find_psd_peaks(f_Hz, db1_full, n_peaks=3,
                                 min_freq=500.0, min_sep_Hz=200.0)
 
-    # ── Shared limits ──
+    # -- Shared limits --
     y_abs_max = max(float(np.max(np.abs(comp0_ac))),
                     float(np.max(np.abs(comp1_ac))),
                     1e-6)
@@ -483,7 +483,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     db_bot = min(float(np.min(db0_full[fmask])), float(np.min(db1_full[fmask])))
     y_lim_f = (db_bot - 3.0, db_top + 10.0)   # headroom for pinned labels
 
-    # ── Figure size (hardcoded per display) ──────────────────────────────
+    # -- Figure size (hardcoded per display) ------------------------------
     # tight_layout reserves decoration padding in proportion to figsize.
     # Too-small figsize → padding dominates → axes look cramped even after
     # maximize. Pick a figsize close to the actual display area.
@@ -491,7 +491,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     #   Swap based on host:
     #     HP Spectre (laptop, field):       (14, 8)     ← active
     #     Prior PC (desktop / ext monitor): (20, 11)
-    # ────────────────────────────────────────────────────────────────────
+    # --------------------------------------------------------------------
     FIG_SIZE_IN = (14, 8)          # HP Spectre
     # FIG_SIZE_IN = (20, 11)       # Prior PC
 
@@ -558,7 +558,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     _maximize_window()
     plt.show()
 
-    # ── Console summary ──
+    # -- Console summary --
     print()
     print(f"  DC offsets — Ch0: {dc0:+.4f} V    Ch1: {dc1:+.4f} V")
     print(f"  Welch     — nfft={nfft}, {n_avg} averages, df={df_bin_Hz:.2f} Hz, hann, 50% overlap")
@@ -567,7 +567,7 @@ def plot_dual_capture(ch0_V, ch0_comp, ch1_V, ch1_comp, fs, base_name):
     hdr = (f"  {'rank':>4s}   {'Ch0 freq (Hz)':>14s}  {'Ch0 (dBV²)':>11s}   "
            f"{'Ch1 freq (Hz)':>14s}  {'Ch1 (dBV²)':>11s}")
     print(hdr)
-    print('  ' + '─' * (len(hdr) - 2))
+    print('  ' + '-' * (len(hdr) - 2))
     for i in range(3):
         if i < len(peaks_ch0):
             s0f = f"{peaks_ch0[i][0]:>14,.2f}"
@@ -637,9 +637,9 @@ def _annotate_peak_db(ax, pk_f, pk_db, rank, flip_left, log_x=True):
         zorder=10)
 
 
-# ════════════════════════════════════════════════════════════
+# ============================================================
 #  MAIN
-# ════════════════════════════════════════════════════════════
+# ============================================================
 
 if __name__ == '__main__':
 
@@ -655,10 +655,10 @@ if __name__ == '__main__':
         os.close(temp_fd)
         os.remove(local_bin)
 
-        # ── Connect ──
+        # -- Connect --
         ssh = ssh_connect()
 
-        # ── Ready prompt ──
+        # -- Ready prompt --
         print()
         print("=" * 60)
         print(f"  DUAL-CHANNEL CAPTURE — Method B Wiener Compensation")
@@ -675,7 +675,7 @@ if __name__ == '__main__':
         print("  RECORDING — perform hammer strikes now!")
         print()
 
-        # ── Capture ──
+        # -- Capture --
         t_start = time.time()
         run_remote_capture(
             ssh,
@@ -692,7 +692,7 @@ if __name__ == '__main__':
         render_progress("Capturing", CAPTURE_SECONDS, CAPTURE_SECONDS)
         print()
 
-        # ── Transfer ──
+        # -- Transfer --
         print()
         sys.stdout.write("  Transferring data... ")
         sys.stdout.flush()
@@ -701,7 +701,7 @@ if __name__ == '__main__':
         t_xfer = time.time() - t_xfer
         print(f"done ({t_xfer:.1f}s)")
 
-        # ── Parse both channels ──
+        # -- Parse both channels --
         sys.stdout.write("  Parsing... ")
         sys.stdout.flush()
         ch0_raw, ch1_raw = parse_binary_dual(
@@ -722,11 +722,11 @@ if __name__ == '__main__':
         ):
             print(f"  Cleanup warning: {warning}")
 
-    # ── Calibrate both channels ──
+    # -- Calibrate both channels --
     ch0_V = ch0_raw.astype(np.float64) * GAIN_CH0 + OFFSET_CH0
     ch1_V = ch1_raw.astype(np.float64) * GAIN_CH1 + OFFSET_CH1
 
-    # ── Apply compensation (single FFT per channel) ──
+    # -- Apply compensation (single FFT per channel) --
     print()
     sys.stdout.write("  Compensating Ch0 (single-FFT)... ")
     sys.stdout.flush()
@@ -750,11 +750,11 @@ if __name__ == '__main__':
     t1 = time.time() - t_comp
     print(f"done ({t1:.1f}s)")
 
-    # ── Save ──
+    # -- Save --
     sys.stdout.write("  Saving... ")
     sys.stdout.flush()
     savemat(filename, {
-        # ── Source-of-truth raw ADC counts (int32). All downstream signals
+        # -- Source-of-truth raw ADC counts (int32). All downstream signals
         #    (calibrated voltages, compensated voltages) are recomputable from
         #    these + metadata via the apply_method_b helper in the MATLAB script.
         #    To re-add a derived array, insert it here, e.g.:
@@ -763,17 +763,17 @@ if __name__ == '__main__':
         'ch0_raw':          ch0_raw,
         'ch1_raw':          ch1_raw,
 
-        # ── Acquisition metadata ──
+        # -- Acquisition metadata --
         'sample_rate':      FS,
         'duration_s':       CAPTURE_SECONDS,
 
-        # ── Calibration (voltage = raw * gain + offset) ──
+        # -- Calibration (voltage = raw * gain + offset) --
         'gain_ch0':         GAIN_CH0,
         'offset_ch0':       OFFSET_CH0,
         'gain_ch1':         GAIN_CH1,
         'offset_ch1':       OFFSET_CH1,
 
-        # ── Compensation metadata (Method B, frozen) ──
+        # -- Compensation metadata (Method B, frozen) --
         'compensation':     'method_b_wiener_cepstral_single_fft',
         'comp_eps_floor':   EPS_FLOOR,
         'comp_eps_wall':    EPS_WALL,
@@ -787,7 +787,7 @@ if __name__ == '__main__':
     }, do_compression=True)
     print("done")
 
-    # ── Summary ──
+    # -- Summary --
     t_total = time.time() - t_start
     print()
     print(f"  Saved: {filename}")
@@ -798,7 +798,7 @@ if __name__ == '__main__':
     print(f"  Comp time: Ch0 {t0:.1f}s + Ch1 {t1:.1f}s")
     print(f"  Total:     {t_total:.1f}s (capture + transfer + processing)")
 
-    # ── Visualization ──
+    # -- Visualization --
     print()
     print("=" * 60)
     print("  DUAL-CHANNEL ANALYSIS")
