@@ -59,16 +59,16 @@ The analog source can be any compatible differential-output sensor within the AD
 
 | Section | What's in it |
 |---|---|
-| [01 — System Overview](docs/01-system-overview.md) | High-level architecture and design goals |
-| [02 — Hardware Architecture](docs/02-hardware-architecture.md) | Signal chain, component choices, power isolation |
-| [03 — ZedBoard + ADC Setup](docs/03-zedboard-adc-setup.md) | Embedded Linux / IIO bring-up, jumpers, static IP, iiod |
-| [04 — Data Capture Workflow](docs/04-data-capture-workflow.md) | Capture, transfer, and the raw-counts save format |
-| [05 — Calibration & Noise](docs/05-calibration-and-voltage-conversion.md) | Counts-to-volts calibration and the measured noise floor |
-| [06 — Frequency Rolloff Investigation](docs/06-frequency-rolloff-investigation.md) | Debug case study: finding the front-end rolloff |
-| [07 — Digital Compensation](docs/07-digital-compensation.md) | Measurement-driven Wiener / minimum-phase correction |
-| [08 — Anti-Alias Filter Design](docs/08-aa-filter-design.md) | The filter that was designed but not deployed |
-| [09 — Deployment & Usage](docs/09-field-deployment-and-usage.md) | Field setup, run workflow, troubleshooting |
-| [10 — Burst-Quality Pipeline](docs/10-burst-quality-pipeline.md) | Per-strike detection, scoring, and GOOD/BAD verdicts |
+| [01  System Overview](docs/01-system-overview.md) | High-level architecture and design goals |
+| [02  Hardware Architecture](docs/02-hardware-architecture.md) | Signal chain, component choices, power isolation |
+| [03  ZedBoard + ADC Setup](docs/03-zedboard-adc-setup.md) | Embedded Linux / IIO bring-up, jumpers, static IP, iiod |
+| [04  Data Capture Workflow](docs/04-data-capture-workflow.md) | Capture, transfer, and the raw-counts save format |
+| [05  Calibration & Noise](docs/05-calibration-and-voltage-conversion.md) | Counts-to-volts calibration and the measured noise floor |
+| [06  Frequency Rolloff Investigation](docs/06-frequency-rolloff-investigation.md) | Debug case study: finding the front-end rolloff |
+| [07  Digital Compensation](docs/07-digital-compensation.md) | Measurement-driven Wiener / minimum-phase correction |
+| [08  Anti-Alias Filter Design](docs/08-aa-filter-design.md) | The filter that was designed but not deployed |
+| [09  Deployment & Usage](docs/09-field-deployment-and-usage.md) | Field setup, run workflow, troubleshooting |
+| [10  Burst-Quality Pipeline](docs/10-burst-quality-pipeline.md) | Per-strike detection, scoring, and GOOD/BAD verdicts |
 | [Interactive UART diagnostics](https://aashishshaju00.github.io/ad4630-zedboard-daq/docs/ZedBoard_DAQ_SOP.html) | USB-UART checks for network recovery, IIO status, local capture testing, shutdown, and staged recovery |
 ---
 
@@ -115,7 +115,7 @@ The MATLAB analysis pipeline (noise-baseline characterization + burst-quality as
 | `scripts/characterize_noise_baseline.m` | Establishes the per-site noise floor (robust STE/line-length statistics) used as the detection reference. |
 | `scripts/daq_burst_quality.m` | Detects impact bursts, scores each on SNR / decay R² / ring-down τ / PSD correlation / impact energy, and assigns GOOD/MARGINAL/BAD/SATURATED verdicts. |
 
-> Config lives in a `USER CONFIG` block at the top of each script (IP, paths, calibration). The SSH password is the stock ADI Kuiper default — change it on your own board.
+> Config lives in a `USER CONFIG` block at the top of each script (IP, paths, calibration). The SSH password is the stock ADI Kuiper default - change it on your own board.
 
 ---
 
