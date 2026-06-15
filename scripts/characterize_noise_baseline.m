@@ -1,7 +1,7 @@
-%% characterize_noise_baseline.m — Environmental noise-floor characterization
+%% characterize_noise_baseline.m - Environmental noise-floor characterization
 %  ─────────────────────────────────────────────────────────────────────
 %  STANDALONE script that ingests a noise-only capture (sensors recording
-%  ambient, no hammer strikes) and produces noise_baseline.mat — a constants
+%  ambient, no hammer strikes) and produces noise_baseline.mat - a constants
 %  file used by daq_burst_quality.m for site-calibrated SNR references
 %  and detector thresholds.
 %
@@ -9,22 +9,22 @@
 %    1. Load a noise-only capture .mat (slim-save format: raw int32 counts)
 %    2. Recover voltages via hardcoded calibration
 %    3. Apply Method B Wiener compensation (identical to field script)
-%    4. Bandpass-filter to 20–80 kHz (analysis band) and 1–10 kHz (impact band)
-%    5. Scan for transients — warn if capture isn't actually quiet
+%    4. Bandpass-filter to 20-80 kHz (analysis band) and 1-10 kHz (impact band)
+%    5. Scan for transients - warn if capture isn't actually quiet
 %    6. Compute per-channel robust noise statistics:
-%         noise_rms_bp     : broadband (20–80 kHz) noise RMS — SNR reference
-%         noise_rms_imp    : impact-band (1–10 kHz) noise RMS — Impact-dB ref
+%         noise_rms_bp     : broadband (20-80 kHz) noise RMS - SNR reference
+%         noise_rms_imp    : impact-band (1-10 kHz) noise RMS - Impact-dB ref
 %         STE contour      : median, 1.4826·MAD, 99th percentile
 %         LL  contour      : median, 1.4826·MAD, 99th percentile
 %    7. Save noise_baseline.mat with timestamp + source filename
 %    8. Display diagnostic figure for visual verification
 %
 %  Use:
-%    1. Capture 10 s with start_daq_uae.py — sensors running, do NOT strike
+%    1. Capture 10 s with start_daq_uae.py - sensors running, do NOT strike
 %    2. Point USER_FILE at the resulting captureN.mat (or use LOAD_MODE = 1
-%       for "most recent" — fine if nothing else was captured after)
+%       for "most recent" - fine if nothing else was captured after)
 %    3. Run this script; inspect diagnostic figure; confirm clean noise
-%    4. noise_baseline.mat is written to DATA_DIR — field script finds it
+%    4. noise_baseline.mat is written to DATA_DIR - field script finds it
 %       automatically on next run
 %
 %  Constants (sysid, calibration, compensator) are copied verbatim from
@@ -46,15 +46,15 @@ FILE_PATTERN = 'capture*.mat';
 
 OUTPUT_FILENAME = 'noise_baseline.mat';   % saved to DATA_DIR
 
-% Bandpass filter — MUST MATCH field script
+% Bandpass filter - MUST MATCH field script
 BP_LOW_HZ  = 20000;
 BP_HIGH_HZ = 80000;
 BP_ORDER   = 4;
 
-% Impact band (low-frequency structural modes) — MUST MATCH field script
+% Impact band (low-frequency structural modes) - MUST MATCH field script
 IMPACT_BAND_HZ = [1000, 10000];
 
-% STE window size — MUST MATCH field script detector
+% STE window size - MUST MATCH field script detector
 DET_F_MIN_HZ    = BP_LOW_HZ;
 DET_WIN_FACTOR  = 4;
 
@@ -145,7 +145,7 @@ ch0_V = ch0_raw * cal_g0 + cal_o0;
 ch1_V = ch1_raw * cal_g1 + cal_o1;
 
 % ═════════════════════════════════════════════════════════════════════
-%  COMPENSATION (Method B Wiener — hardcoded inline)
+%  COMPENSATION (Method B Wiener - hardcoded inline)
 % ═════════════════════════════════════════════════════════════════════
 fprintf('  Applying Method B compensation...\n');
 tic;
@@ -156,7 +156,7 @@ ch1_comp = apply_method_b(ch1_V, fs, SYSID_FREQS, SYSID_GAIN_CH1, ...
 fprintf('  Compensation: %.1f s\n', toc);
 
 % ═════════════════════════════════════════════════════════════════════
-%  BANDPASS FILTERS (20–80 kHz for STE/SNR, 1–10 kHz for impact)
+%  BANDPASS FILTERS (20-80 kHz for STE/SNR, 1-10 kHz for impact)
 % ═════════════════════════════════════════════════════════════════════
 [bp_b,  bp_a ] = butter(BP_ORDER, [BP_LOW_HZ, BP_HIGH_HZ] / (fs/2), 'bandpass');
 [imp_b, imp_a] = butter(BP_ORDER, IMPACT_BAND_HZ            / (fs/2), 'bandpass');
@@ -167,11 +167,11 @@ ch0_imp = filtfilt(imp_b, imp_a, ch0_comp);
 ch1_imp = filtfilt(imp_b, imp_a, ch1_comp);
 
 % ═════════════════════════════════════════════════════════════════════
-%  TRANSIENT SANITY CHECK — is this actually a quiet recording?
+%  TRANSIENT SANITY CHECK - is this actually a quiet recording?
 % ═════════════════════════════════════════════════════════════════════
 % 100 ms rolling RMS of the band-passed signal. If any window's RMS is
 % more than TRANSIENT_RATIO_DB above the median rolling-RMS, that's a
-% candidate transient — warn the user but don't abort.
+% candidate transient - warn the user but don't abort.
 win_n = max(1, round(TRANSIENT_WIN_S * fs));
 
 roll_rms_ch0 = sqrt(movmean(ch0_bp.^2, win_n));
@@ -192,22 +192,22 @@ transient_flag     = transient_flag_ch0 || transient_flag_ch1;
 [~, imax_ch0] = max(roll_rms_ch0);
 [~, imax_ch1] = max(roll_rms_ch1);
 
-fprintf('\n  ─── Transient scan (100 ms rolling RMS) ─────────────\n');
+fprintf('\n  ─── Transient scan (100 ms rolling RMS) ───\n');
 fprintf('    Ch0  max/median = %+6.2f dB   (peak at t = %6.3f s)%s\n', ...
-    ratio_db_ch0, t(imax_ch0), ternary(transient_flag_ch0, '   ⚠ FLAGGED', ''));
+    ratio_db_ch0, t(imax_ch0), ternary(transient_flag_ch0, '    FLAGGED', ''));
 fprintf('    Ch1  max/median = %+6.2f dB   (peak at t = %6.3f s)%s\n', ...
-    ratio_db_ch1, t(imax_ch1), ternary(transient_flag_ch1, '   ⚠ FLAGGED', ''));
+    ratio_db_ch1, t(imax_ch1), ternary(transient_flag_ch1, '    FLAGGED', ''));
 if transient_flag
-    fprintf('\n  ⚠ WARNING — suspected transient(s) in noise capture.\n');
+    fprintf('\n   WARNING - suspected transient(s) in noise capture.\n');
     fprintf('    Inspect the rolling-RMS panel in the diagnostic figure.\n');
     fprintf('    If an accidental tap / EMI spike is present, re-record.\n');
     fprintf('    Statistics below are computed using the whole capture\n');
-    fprintf('    (robust estimators — median/MAD — are resistant, but\n');
+    fprintf('    (robust estimators - median/MAD - are resistant, but\n');
     fprintf('    not immune, to sustained transients).\n');
 end
 
 % ═════════════════════════════════════════════════════════════════════
-%  COMPUTE NOISE STATISTICS — per channel
+%  COMPUTE NOISE STATISTICS - per channel
 % ═════════════════════════════════════════════════════════════════════
 % Broadband and impact-band RMS (used as SNR / Impact-dB references)
 noise_rms_bp_ch0  = rms(ch0_bp);
@@ -215,22 +215,22 @@ noise_rms_bp_ch1  = rms(ch1_bp);
 noise_rms_imp_ch0 = rms(ch0_imp);
 noise_rms_imp_ch1 = rms(ch1_imp);
 
-% STE contour — window size MUST match the field detector
+% STE contour - window size MUST match the field detector
 win_dur     = DET_WIN_FACTOR / DET_F_MIN_HZ;           % seconds
 win_samples = max(1, round(win_dur * fs));
 win         = ones(win_samples, 1);
 
-% ── UAE-band (20–80 kHz) STE + LL — used by quality scoring downstream ──
+% ── UAE-band (20-80 kHz) STE + LL - used by quality scoring downstream ──
 ste_ch0 = sqrt(conv(ch0_bp.^2, win, 'same') / win_samples);
 ste_ch1 = sqrt(conv(ch1_bp.^2, win, 'same') / win_samples);
 
 ll_ch0 = conv([0; abs(diff(ch0_bp))], win, 'same');
 ll_ch1 = conv([0; abs(diff(ch1_bp))], win, 'same');
 
-% ── Impact-band (1–10 kHz) STE + LL — used by field detector for triggering ──
-% Same window size (200 µs) as UAE band — keeps statistics directly comparable
+% ── Impact-band (1-10 kHz) STE + LL - used by field detector for triggering ──
+% Same window size (200 µs) as UAE band - keeps statistics directly comparable
 % and matches the field-script detector. Impact-band STE has higher SNR for
-% strike detection (1–10 kHz carries ~40% of strike energy vs ~3% in UAE band),
+% strike detection (1-10 kHz carries ~40% of strike energy vs ~3% in UAE band),
 % which lets the field script trigger reliably even when UAE coupling is weak.
 ste_ch0_imp = sqrt(conv(ch0_imp.^2, win, 'same') / win_samples);
 ste_ch1_imp = sqrt(conv(ch1_imp.^2, win, 'same') / win_samples);
@@ -279,15 +279,15 @@ ll_p99_ch1_imp     = p99(ll_ch1_imp);
 fprintf('\n  ─── Noise statistics ────────────────────────────────\n');
 fprintf('                              Ch0           Ch1\n');
 fprintf('    RMS broadband (V) :   %.3e   %.3e\n',  noise_rms_bp_ch0,  noise_rms_bp_ch1);
-fprintf('    RMS 1–10 kHz  (V) :   %.3e   %.3e\n',  noise_rms_imp_ch0, noise_rms_imp_ch1);
-fprintf('    ── UAE band (20–80 kHz) ──\n');
+fprintf('    RMS 1-10 kHz  (V) :   %.3e   %.3e\n',  noise_rms_imp_ch0, noise_rms_imp_ch1);
+fprintf('    ── UAE band (20-80 kHz) ──\n');
 fprintf('    STE median    (V) :   %.3e   %.3e\n',  ste_median_ch0, ste_median_ch1);
 fprintf('    STE 1.4826·MAD(V) :   %.3e   %.3e\n',  ste_mad_ch0,    ste_mad_ch1);
 fprintf('    STE 99th pct  (V) :   %.3e   %.3e\n',  ste_p99_ch0,    ste_p99_ch1);
 fprintf('    LL  median        :   %.3e   %.3e\n',  ll_median_ch0,  ll_median_ch1);
 fprintf('    LL  1.4826·MAD    :   %.3e   %.3e\n',  ll_mad_ch0,     ll_mad_ch1);
 fprintf('    LL  99th pct      :   %.3e   %.3e\n',  ll_p99_ch0,     ll_p99_ch1);
-fprintf('    ── Impact band (1–10 kHz) — used by field detector ──\n');
+fprintf('    ── Impact band (1-10 kHz) - used by field detector ──\n');
 fprintf('    STE median    (V) :   %.3e   %.3e\n',  ste_median_ch0_imp, ste_median_ch1_imp);
 fprintf('    STE 1.4826·MAD(V) :   %.3e   %.3e\n',  ste_mad_ch0_imp,    ste_mad_ch1_imp);
 fprintf('    STE 99th pct  (V) :   %.3e   %.3e\n',  ste_p99_ch0_imp,    ste_p99_ch1_imp);
@@ -351,7 +351,7 @@ save(output_path, 'noise_baseline');
 fprintf('\n  ✓ Saved noise baseline → %s\n', output_path);
 
 % ═════════════════════════════════════════════════════════════════════
-%  DIAGNOSTIC FIGURE — 3×2 layout
+%  DIAGNOSTIC FIGURE - 3×2 layout
 %    Row 1:  Ch0 waveform                | Ch1 waveform
 %    Row 2:  Ch0 Welch PSD               | Ch1 Welch PSD
 %    Row 3:  Ch0+Ch1 rolling RMS         | STE histograms (Ch0+Ch1)
@@ -365,7 +365,7 @@ end
 tl = tiledlayout(fig, 3, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 if transient_flag
     title_str = sprintf(['%s   |   Fs=%.1f kSPS   |   %.1fs   |   ', ...
-        '\\color{red}⚠ TRANSIENT DETECTED — INSPECT ROLLING RMS'], ...
+        '\\color{red} TRANSIENT DETECTED - INSPECT ROLLING RMS'], ...
         load_name, fs/1e3, duration_s);
 else
     title_str = sprintf('%s   |   Fs=%.1f kSPS   |   %.1fs   |   \\color[rgb]{0,0.5,0}clean', ...
@@ -378,7 +378,7 @@ ax = nexttile(tl);
 plot(ax, t, ch0_bp, 'Color', [0.78 0.13 0.13], 'LineWidth', 0.5);
 grid(ax, 'on'); ax.GridAlpha = 0.25;
 ylabel(ax, 'Ch0  (V)');
-title(ax, 'Ch0 — Compensated, 20–80 kHz band-passed', 'FontWeight', 'bold');
+title(ax, 'Ch0 - Compensated, 20-80 kHz band-passed', 'FontWeight', 'bold');
 ylim_wave = [-1 1] * max(max(abs(ch0_bp)), max(abs(ch1_bp))) * 1.1;
 ylim(ax, ylim_wave);
 
@@ -386,7 +386,7 @@ ax = nexttile(tl);
 plot(ax, t, ch1_bp, 'Color', [0.13 0.45 0.78], 'LineWidth', 0.5);
 grid(ax, 'on'); ax.GridAlpha = 0.25;
 ylabel(ax, 'Ch1  (V)');
-title(ax, 'Ch1 — Compensated, 20–80 kHz band-passed', 'FontWeight', 'bold');
+title(ax, 'Ch1 - Compensated, 20-80 kHz band-passed', 'FontWeight', 'bold');
 ylim(ax, ylim_wave);
 
 % ── Row 2: Welch PSDs (full-band, log-x) ──
@@ -402,7 +402,7 @@ add_band_patches(ax, IMPACT_BAND_HZ, [BP_LOW_HZ BP_HIGH_HZ]);
 grid(ax, 'on'); ax.GridAlpha = 0.25; set(ax, 'XMinorGrid', 'on');
 xlim(ax, [0.1, fs/2e3]);
 xlabel(ax, 'Frequency  (kHz)'); ylabel(ax, 'Ch0  (dBV^2)');
-title(ax, 'Ch0 — Welch PSD (compensated)', 'FontWeight', 'bold');
+title(ax, 'Ch0 - Welch PSD (compensated)', 'FontWeight', 'bold');
 
 ax = nexttile(tl);
 semilogx(ax, f_psd/1e3, db1, 'Color', [0.13 0.45 0.78], 'LineWidth', 0.7); hold(ax, 'on');
@@ -410,7 +410,7 @@ add_band_patches(ax, IMPACT_BAND_HZ, [BP_LOW_HZ BP_HIGH_HZ]);
 grid(ax, 'on'); ax.GridAlpha = 0.25; set(ax, 'XMinorGrid', 'on');
 xlim(ax, [0.1, fs/2e3]);
 xlabel(ax, 'Frequency  (kHz)'); ylabel(ax, 'Ch1  (dBV^2)');
-title(ax, 'Ch1 — Welch PSD (compensated)', 'FontWeight', 'bold');
+title(ax, 'Ch1 - Welch PSD (compensated)', 'FontWeight', 'bold');
 
 % ── Row 3a: Rolling RMS (transient check) ──
 ax = nexttile(tl);
@@ -424,7 +424,7 @@ yline(ax, TRANSIENT_RATIO_DB, '--k', ...
 grid(ax, 'on'); ax.GridAlpha = 0.25;
 xlabel(ax, 'Time  (s)');
 ylabel(ax, 'Rolling RMS  (dB re median)');
-title(ax, sprintf('Rolling RMS (%.0f ms window) — transient check', ...
+title(ax, sprintf('Rolling RMS (%.0f ms window) - transient check', ...
     TRANSIENT_WIN_S*1e3), 'FontWeight', 'bold');
 legend(ax, 'Location', 'best', 'Box', 'off');
 
@@ -454,7 +454,7 @@ fprintf('\n  Diagnostic figure drawn. Inspect, then close to finish.\n');
 % ═════════════════════════════════════════════════════════════════════
 
 function add_band_patches(ax, imp_band, bp_band)
-% Shade the impact (1–10 kHz) and analysis (20–80 kHz) bands on a PSD axis.
+% Shade the impact (1-10 kHz) and analysis (20-80 kHz) bands on a PSD axis.
     yl = ylim(ax);
     if all(isfinite(yl)) && yl(2) > yl(1)
         patch(ax, [imp_band(1) imp_band(2) imp_band(2) imp_band(1)]/1e3, ...
@@ -471,7 +471,7 @@ function out = ternary(cond, a, b)
 end
 
 function m = mad1(x)
-% Median Absolute Deviation about the median — base-MATLAB implementation
+% Median Absolute Deviation about the median - base-MATLAB implementation
 % equivalent to mad(x, 1) from the Statistics & Machine Learning Toolbox.
 % Stats Toolbox is not assumed in this script.
     x = x(:);
@@ -479,7 +479,7 @@ function m = mad1(x)
 end
 
 function q = p99(x)
-% 99th percentile via linear interpolation on sorted data — base-MATLAB
+% 99th percentile via linear interpolation on sorted data - base-MATLAB
 % equivalent to quantile(x, 0.99). Stats Toolbox not assumed.
     x = sort(x(:));
     n = numel(x);
@@ -494,7 +494,7 @@ end
 
 function y_comp = apply_method_b(y_in, fs, sysid_freqs, sysid_gain, fc_1p, ...
                                   eps_floor, eps_wall, f_edge, df_trans)
-% Method B Wiener compensation — EXACT validated implementation.
+% Method B Wiener compensation - EXACT validated implementation.
 % Identical to Python's apply_compensation in start_daq_uae.py and the
 % MATLAB analysis script daq_burst_quality.m.
     y_dc = mean(y_in);
@@ -549,13 +549,13 @@ function [g, o] = resolve_calib(S, ch, g_default, o_default)
         g = double(S.(gfield));
         o = double(S.(ofield));
         if abs(g - g_default) > 1e-12 || abs(o - o_default) > 1e-9
-            fprintf(['  ⚠ %s calibration in capture (g=%.6g, o=%+.6g) ' ...
+            fprintf(['   %s calibration in capture (g=%.6g, o=%+.6g) ' ...
                 'differs from frozen defaults (g=%.6g, o=%+.6g); ' ...
                 'using capture values.\n'], ch, g, o, g_default, o_default);
         end
     else
         g = g_default;  o = o_default;
-        fprintf(['  ⚠ Capture has no %s calibration; using frozen ' ...
+        fprintf(['   Capture has no %s calibration; using frozen ' ...
             'defaults (g=%.6g, o=%+.6g).\n'], ch, g_default, o_default);
     end
 end

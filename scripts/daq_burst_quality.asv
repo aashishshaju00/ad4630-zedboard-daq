@@ -2061,6 +2061,7 @@ function save_burst_data(burst_path, basename, source_file, source_path, ...
 % Both signals stored as double, full sample rate. Per-strike clips only -
 % no full-capture signals saved (would multiply file size by ~30×).
 
+    % ─── meta ──────────────────────────────────────────────────────────
     [specimen_id, measurement_point] = parse_basename(basename);
 
     meta.basename         = basename;
@@ -2077,17 +2078,17 @@ function save_burst_data(burst_path, basename, source_file, source_path, ...
     meta.n_strikes_ch0    = uint8(n_strikes_ch0);
     meta.n_strikes_ch1    = uint8(n_strikes_ch1);
 
-    % ─── windows ───────────────────────────
+    % ─── windows ───────────────────────────────────────────────────────
     windows.idx_ch0_uae = int32(idx_ch0_uae);
     windows.idx_ch1_uae = int32(idx_ch1_uae);
     windows.idx_ch0_imp = int32(idx_ch0_imp);
     windows.idx_ch1_imp = int32(idx_ch1_imp);
 
-    % ─── per-strike clips ─────────────────
+    % ─── per-strike clips ──────────────────────────────────────────────
     ch0 = extract_clips(ch0_comp, ch0_bp, idx_ch0_imp, idx_ch0_uae, fs);
     ch1 = extract_clips(ch1_comp, ch1_bp, idx_ch1_imp, idx_ch1_uae, fs);
 
-    % ─── assemble + save ──────
+    % ─── assemble + save ───────────────────────────────────────────────
     burst_data.meta      = meta;
     burst_data.decision  = decision;
     burst_data.note_text = note_text;

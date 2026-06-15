@@ -1,4 +1,4 @@
-%% sysid_analysis_dual.m — Comprehensive System ID from Raw Sweep Data
+%% sysid_analysis_dual.m - Comprehensive System ID from Raw Sweep Data
 % ══════════════════════════════════════════════════════════════════════
 % Loads raw ADC waveforms from freq_sweep_sysid_dual.py output and performs
 % complete system identification from scratch.
@@ -92,7 +92,7 @@ fprintf(' Done. Range: %.4f to %.4f V\n', ...
 fprintf('\n');
 
 % ═══════════════════════════════════════════════════════════════
-% AMPLITUDE & PHASE ESTIMATION — THREE METHODS
+% AMPLITUDE & PHASE ESTIMATION - THREE METHODS
 % ═══════════════════════════════════════════════════════════════
 
 % Preallocate results: (n_freqs × n_repeats) for each method
@@ -121,7 +121,7 @@ for fi = 1:n_freqs
     for ri = 1:n_repeats
         x = volt_waveforms(:, fi, ri);
 
-        % ── Method 1: Lock-in projection ──────────────────────
+        % ── Method 1: Lock-in projection 
         trim_samp = round(trim_cycles / f0 * fs);
         if 2*trim_samp < n_samples - 100
             x_trim = x(trim_samp+1 : end-trim_samp);
@@ -142,7 +142,7 @@ for fi = 1:n_freqs
         amp_lockin(fi, ri) = sqrt(I_val^2 + Q_val^2);
         phase_lockin(fi, ri) = atan2d(Q_val, I_val);
 
-        % ── Method 2: FFT peak ────────────────────────────────
+        % ── Method 2: FFT peak 
         X_fft = fft(x .* win);
         fft_freqs = (0:n_samples-1)' * fs / n_samples;
         mag_fft = 2 * abs(X_fft) / win_sum;
@@ -159,7 +159,7 @@ for fi = 1:n_freqs
             amp_fft(fi, ri) = 0;
         end
 
-        % ── Method 3: Least-squares sine fit ──────────────────
+        % ── Method 3: Least-squares sine fit 
         % Model: x(t) = A*cos(2π f0 t) + B*sin(2π f0 t) + C
         % This is LINEAR in [A, B, C] → direct solution via \
         M = [cos(2*pi*f0*t_trim), sin(2*pi*f0*t_trim), ones(N_trim, 1)];
@@ -188,7 +188,7 @@ amp_fft_std = std(amp_fft, 0, 2);
 amp_sinefit_avg = mean(amp_sinefit, 2);
 amp_sinefit_std = std(amp_sinefit, 0, 2);
 
-% Gain ratios and dB (using FFT as primary — matches previous methodology)
+% Gain ratios and dB (using FFT as primary - matches previous methodology)
 gain_ratio_fft = amp_fft_avg / input_vpeak;
 gain_dB_fft = 20 * log10(max(gain_ratio_fft, 1e-10));
 
@@ -203,9 +203,9 @@ gain_dB_sinefit = 20 * log10(max(gain_ratio_sinefit, 1e-10));
 % ═══════════════════════════════════════════════════════════════
 
 fprintf('\n');
-fprintf('┌──────────┬───────────────────────────────┬───────────────────────────────┬───────────────────────────────┐\n');
+
 fprintf('│ Freq(kHz)│ Lock-in (V) ± σ(mV) dB │ FFT pk (V) ± σ(mV) dB │ Sine fit (V) ± σ(mV) dB │\n');
-fprintf('├──────────┼───────────────────────────────┼───────────────────────────────┼───────────────────────────────┤\n');
+
 for k = 1:n_freqs
     fprintf('│ %7.1f │ %.4f ±%5.1f %+6.1f dB │ %.4f ±%5.1f %+6.1f dB │ %.4f ±%5.1f %+6.1f dB │\n', ...
         freqs(k)/1e3, ...
@@ -213,13 +213,12 @@ for k = 1:n_freqs
         amp_fft_avg(k), amp_fft_std(k)*1e3, gain_dB_fft(k), ...
         amp_sinefit_avg(k), amp_sinefit_std(k)*1e3, gain_dB_sinefit(k));
 end
-fprintf('└──────────┴───────────────────────────────┴───────────────────────────────┴───────────────────────────────┘\n\n');
 
 % ═══════════════════════════════════════════════════════════════
 % FIGURE 1: RAW WAVEFORM GALLERY (selected frequencies)
 % ═══════════════════════════════════════════════════════════════
 % Visual inspection of actual captured waveforms at key frequencies.
-% THIS IS THE MOST IMPORTANT DIAGNOSTIC — look for:
+% THIS IS THE MOST IMPORTANT DIAGNOSTIC - look for:
 % - Clean sine vs noise/distortion
 % - Signal presence vs absence at suspected null frequencies
 % - Clipping, DC offset issues
@@ -280,7 +279,7 @@ for k = 1:n_inspect
     set(ax, 'FontSize', 7);
 end
 
-sgtitle(sprintf('Raw Waveform Gallery — %d Selected Frequencies (blue=raw, red=AC)', ...
+sgtitle(sprintf('Raw Waveform Gallery - %d Selected Frequencies (blue=raw, red=AC)', ...
     n_inspect), 'FontSize', 13, 'FontWeight', 'bold');
 
 % ═══════════════════════════════════════════════════════════════
@@ -367,8 +366,8 @@ fprintf(' Sine fit vs FFT:  max diff = %.1f%%, mean = %.1f%%\n', ...
 
 suspect = find(pct_SF_vs_FFT > 20);
 if ~isempty(suspect)
-    fprintf(' ⚠ Frequencies where coherent methods diverge >20%% from FFT:\n');
-    fprintf('   (Cause: ADC clock offset — sinc attenuation of lock-in/sine fit)\n');
+    fprintf(' caution Frequencies where coherent methods diverge >20%% from FFT:\n');
+    fprintf('   (Cause: ADC clock offset - sinc attenuation of lock-in/sine fit)\n');
     for k = 1:length(suspect)
         fprintf('   %.1f kHz: SineFit=%.4f V vs FFT=%.4f V (%.0f%% underestimate)\n', ...
             freqs(suspect(k))/1e3, amp_sinefit_avg(suspect(k)), ...
@@ -378,20 +377,20 @@ end
 fprintf('\n');
 
 % ═══════════════════════════════════════════════════════════════
-% MONOTONICITY CHECK — IS THE NOTCH REAL?
+% MONOTONICITY CHECK - IS THE NOTCH REAL?
 % ═══════════════════════════════════════════════════════════════
 
 fprintf('Monotonicity check (FFT peak amplitudes):\n');
 non_mono = find(diff(amps_fit) > 0);
 if isempty(non_mono)
-    fprintf(' ✓ Amplitude is monotone-decreasing across all frequencies.\n');
+    fprintf(' Amplitude is monotone-decreasing across all frequencies.\n');
     fprintf(' Simple LP model should fit well.\n');
     has_notch = false;
 else
-    fprintf(' ✗ Non-monotone regions detected:\n');
+    fprintf('  Non-monotone regions detected:\n');
     for k = 1:length(non_mono)
         idx = non_mono(k);
-        fprintf(' %.1f → %.1f kHz: %.4f → %.4f V (increase of %.1f mV)\n', ...
+        fprintf(' %.1f -> %.1f kHz: %.4f → %.4f V (increase of %.1f mV)\n', ...
             freqs(idx)/1e3, freqs(idx+1)/1e3, ...
             amps_fit(idx), amps_fit(idx+1), ...
             (amps_fit(idx+1) - amps_fit(idx))*1e3);
@@ -402,20 +401,20 @@ else
     if min_idx > 1 && min_idx < n_freqs && ...
             amps_fit(min_idx-1) > min_val * 2 && ...
             amps_fit(min(min_idx+3, n_freqs)) > min_val * 2
-        fprintf(' ⚠ NOTCH detected near %.1f kHz (min = %.4f V)\n', ...
+        fprintf('  NOTCH detected near %.1f kHz (min = %.4f V)\n', ...
             freqs(min_idx)/1e3, min_val);
         fprintf(' A simple 1-pole or 2-pole model CANNOT fit this.\n');
         fprintf(' Check waveform gallery at this frequency.\n');
         has_notch = true;
     else
         has_notch = false;
-        fprintf(' Minor non-monotonicity — may be measurement noise.\n');
+        fprintf(' Minor non-monotonicity - may be measurement noise.\n');
     end
 end
 fprintf('\n');
 
 % ═══════════════════════════════════════════════════════════════
-% MODEL FITTING — MAGNITUDE ONLY
+% MODEL FITTING - MAGNITUDE ONLY
 % ═══════════════════════════════════════════════════════════════
 % NOTE: Phase excluded (no trigger alignment in current sweep setup).
 
@@ -547,9 +546,7 @@ fprintf('\n');
 % RECOMMENDED PARAMETERS
 % ═══════════════════════════════════════════════════════════════
 
-fprintf('╔══════════════════════════════════════════════════════════════╗\n');
 fprintf('║ RECOMMENDED start_daq_uae.py PARAMETERS ║\n');
-fprintf('╠══════════════════════════════════════════════════════════════╣\n');
 if strcmp(best, '1-pole') && fit1_ok
     rec_fc = fc_1p;
     rec_G = gain_1p / input_vpeak;
@@ -567,10 +564,9 @@ elseif fit2_ok
     fprintf('║ AFE_FC1 = %.0f AFE_FC2 = %.0f AFE_G = %.4f ║\n', ...
         fc1_2p, fc2_2p, rec_G);
 end
-fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
 
 if has_notch
-    fprintf(' ⚠ WARNING: Notch detected in measured data.\n');
+    fprintf('  WARNING: Notch detected in measured data.\n');
     fprintf(' Parametric models above may not adequately capture system behavior.\n');
     fprintf(' Inspect waveform gallery and verify with oscilloscope before\n');
     fprintf(' updating start_daq_uae.py parameters.\n\n');
@@ -619,7 +615,7 @@ end
 legend('Location', 'northeast', 'FontSize', 8);
 ylabel('Amplitude (V peak)', 'FontSize', 11);
 xlabel('Frequency (kHz)', 'FontSize', 11);
-title(sprintf('Bode Magnitude — %d points, %d repeats, %s', ...
+title(sprintf('Bode Magnitude - %d points, %d repeats, %s', ...
     n_freqs, n_repeats, method_label), 'FontSize', 12, 'FontWeight', 'bold');
 xlim([freqs(1)/1e3 * 0.7, freqs(end)/1e3 * 1.5]);
 
@@ -657,7 +653,7 @@ yline(0, 'k-', 'LineWidth', 0.5);
 xlabel('Frequency (kHz)'); ylabel('Residual (%)');
 title('Fractional Residuals'); legend('Location', 'best', 'FontSize', 8);
 
-sgtitle('System Identification — Model Fitting', ...
+sgtitle('System Identification - Model Fitting', ...
     'FontSize', 14, 'FontWeight', 'bold');
 
 % ═══════════════════════════════════════════════════════════════
@@ -779,7 +775,7 @@ fs_actual_std  = std(fs_est_good(:));
 delta_fs = fs_actual_mean - fs_nominal;
 ppm_offset = delta_fs / fs_nominal * 1e6;
 
-fprintf('Test 1 — Direct fs estimation from FFT peak bins:\n');
+fprintf('Test 1 - Direct fs estimation from FFT peak bins:\n');
 fprintf('  fs_actual = %.3f ± %.3f Hz\n', fs_actual_mean, fs_actual_std);
 fprintf('  Δfs       = %+.3f Hz  (%+.2f ppm)\n', delta_fs, ppm_offset);
 fprintf('  (Positive = ADC clock runs fast, negative = slow)\n\n');
@@ -813,17 +809,17 @@ refine_cost = @(dfs) sum((ratio_LI_FFT(good_mask) - sinc_model(dfs, freqs(good_m
 dfs_sinc = fminsearch(refine_cost, dfs_sinc);
 ppm_sinc = dfs_sinc / fs_nominal * 1e6;
 
-fprintf('Test 2 — Sinc envelope fit (lock-in / FFT ratio):\n');
+fprintf('Test 2 - Sinc envelope fit (lock-in / FFT ratio):\n');
 fprintf('  Δfs_sinc  = %+.3f Hz  (%+.2f ppm)\n', dfs_sinc, ppm_sinc);
 
 % Check agreement with Test 1
 fprintf('  Agreement with Test 1: %.3f Hz difference\n\n', abs(delta_fs - dfs_sinc));
 
-% ── Test 3: Repeat-to-repeat stability ──
+% ── Test 3: Repeat-to-repeat stability
 %  Is the offset constant across captures (fixed crystal) or
 %  variable (jitter/drift)?
 
-fprintf('Test 3 — Repeat-to-repeat stability (f ≥ 5 kHz):\n');
+fprintf('Test 3 - Repeat-to-repeat stability (f ≥ 5 kHz):\n');
 for ri = 1:n_repeats
     vals = fs_estimates(good_mask, ri);
     fprintf('  Repeat %d: fs = %.3f ± %.3f Hz  (Δ = %+.3f Hz)\n', ...
@@ -886,7 +882,6 @@ sgtitle(sprintf('ADC Clock Characterization: Δfs = %+.2f Hz  (%+.1f ppm)', ...
     delta_fs, ppm_offset), 'FontSize', 14, 'FontWeight', 'bold');
 %% ═══════════════════════════════════════════════════════════════
 % SAVE ALL RESULTS
-% ═══════════════════════════════════════════════════════════════
 
 % Per-channel output (act = driven channel, 0/1) so a ch1 run does not
 % overwrite the ch0 fit. active_channel is carried through for provenance.
