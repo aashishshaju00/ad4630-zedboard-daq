@@ -119,12 +119,4 @@ The MATLAB analysis pipeline (noise-baseline characterization + burst-quality as
 
 ---
 
-## Status
-
-**Done:** hardware bring-up · local capture + host transfer (shared failure-safe module, unit-tested) · per-channel calibration · front-end system ID · Method B digital compensation (Python + MATLAB) · noise/performance validation · anti-alias filter designed, built, and characterized (kept as a spare) · burst-quality MATLAB pipeline · full build guide (Markdown + PDF).
-
-This documentation covers the full design, build, and validation pipeline and reflects the system as currently deployed — an engineering record meant to be read and adapted, not a turnkey product.
-
----
-
 This repository documents how the system was built and *why* the key decisions were made, so another engineer could understand, reproduce, or extend it.
