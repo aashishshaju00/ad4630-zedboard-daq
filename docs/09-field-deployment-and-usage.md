@@ -2,7 +2,7 @@
 
 This document is the operating guide for taking the data-acquisition (DAQ) system from the laboratory to a measurement site. It covers pre-deployment checks, field connections, the capture sequence, record keeping, clean shutdown, and common problems.
 
-The ZedBoard and evaluation board should already be configured according to [03, ZedBoard and analog-to-digital converter setup](03-zedboard-adc-setup.md). The full procurement and assembly information is available in the [DAQ system build guide](../references/DAQ_System_Build_Guide.md).
+The ZedBoard and evaluation board should already be configured according to [03, ZedBoard and analog-to-digital converter setup](03-zedboard-adc-setup.md). The full procurement and assembly information is available in the [DAQ system build guide](../references/DAQ_System_Build_Guide.pdf).
 
 ## Field workflow
 

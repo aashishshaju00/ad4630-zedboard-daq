@@ -150,7 +150,7 @@ The filter had the following measured performance:
 
 The filter works as designed, but it is not included in the deployed signal chain.
 
-During system validation, the ADA4945-1 front end on the evaluation board was found to begin rolling off at approximately 48 to 53 kHz in the tested configuration. This is below the external filter cutoff and well below the 250 kHz Nyquist frequency at the 500 kSPS operating rate. The tested source also carries little energy in the higher-frequency region where aliasing would be a concern.
+During system validation, the ADA4945-1 front end on the evaluation board was found to begin rolling off at approximately 50 to 55 kHz in the tested configuration. This is below the external filter cutoff and well below the 250 kHz Nyquist frequency at the 500 kSPS operating rate. The tested source also carries little energy in the higher-frequency region where aliasing would be a concern.
 
 For this specific sensor and front-end combination, the external filter was therefore kept as an optional stage rather than added to the deployed hardware.
 

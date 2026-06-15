@@ -95,7 +95,7 @@ Its measured performance was:
 
 The filter was successfully tested but was not included in the deployed signal chain.
 
-The main reason was the measured response of the existing AFE. In the tested evaluation-board configuration, the ADA4945-1 path already begins to roll off at approximately 48 to 53 kHz. This is below the external filter cutoff and below the 250 kHz Nyquist frequency at the selected sample rate. The tested source also carries little energy in the higher-frequency region where aliasing would be a concern.
+The main reason was the measured response of the existing AFE. In the tested evaluation-board configuration, the ADA4945-1 path already begins to roll off at approximately 50 to 55 kHz. This is below the external filter cutoff and below the 250 kHz Nyquist frequency at the selected sample rate. The tested source also carries little energy in the higher-frequency region where aliasing would be a concern.
 
 For the tested sensor, preamplifier, AFE, and measurement band, the external filter was therefore retained as an optional stage instead of being added to the normal hardware chain.
 

@@ -369,4 +369,4 @@ Before running the main capture script, confirm:
 
 Once these checks pass, continue with [04, data capture workflow](04-data-capture-workflow.md).
 
-Full procurement, assembly, and deployment information is also available in the [DAQ system build guide](../references/).
+Full procurement, assembly, and deployment information is also available in the [DAQ system build guide](../references/DAQ_System_Build_Guide.pdf).
